@@ -11,7 +11,7 @@ Last Modified:    2025-07-30
 Version:          0.9.9
 
 Usage:
-    streamlit dashboard.py
+    streamlit run dashboard.py
 
 Dependencies:
     - See environment.yml
