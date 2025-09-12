@@ -274,11 +274,27 @@ class MapVisualizer:
 
         layers = self._create_map_layers(filtered_data)
 
+
+        # birdnet icon
+        special_point = pd.DataFrame([{'latitude': 33.0957347740747, 'longitude': -117.0015068946504}])
+        special_layer = pdk.Layer(
+            'ScatterplotLayer',
+            data=special_point,
+            get_position='[longitude, latitude]',
+            get_color='[0, 0, 255, 200]',  # blue dot, for example
+            get_radius=100,
+            pickable=True
+        )
+
+        layers = self._create_map_layers(filtered_data)
+        layers.append(special_layer)
+
         st.pydeck_chart(
             pdk.Deck(
                 layers=layers,
                 initial_view_state=pdk.ViewState(**MAP_CONFIG),
-                map_style="mapbox://styles/mapbox/light-v9",
+                #map_style="mapbox://styles/mapbox/light-v9",
+                map_style="mapbox://styles/mapbox/outdoors-v12",
                 tooltip=self.tooltip
             )
         )
