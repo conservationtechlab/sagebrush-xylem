@@ -11,7 +11,7 @@ Last Modified:    2025-07-30
 Version:          0.9.9
 
 Usage:
-    streamlit dashboard.py
+    streamlit run dashboard.py
 
 Dependencies:
     - See environment.yml
@@ -46,7 +46,19 @@ st.set_page_config(
 
 CACHE_TTL = 3600
 TEMPERATURE_THRESHOLD = 50
-SENSORS = ['boa_hills_temp_sensor', 'ridge_gateway_temp_sensor_6', 'ridge_gateway_temp_sensor_3']
+SENSORS = [
+        'boa_hills_temp_sensor',
+        'ridge_gateway_temp_sensor_6',
+        'ridge_gateway_temp_sensor_3'
+        'A8404139F05E8D6B',
+        'A840414AFA5E8DB9',
+        'A840414B2D5E8DB4',
+        'A84041DCA75E8DB3',
+        'A84041F1A35E8D85',
+        'A8404107FF59DB7B',
+        'A840417C1759DB82',
+        'A84041F4775CC638'
+        ]
 MAP_CONFIG = {
     'latitude': 33.095295,
     'longitude': -116.979037,
@@ -89,7 +101,7 @@ class DatabaseManager:
         params = _self._load_secrets()
 
         query = """
-        SELECT deployment_id, recorded_at, temperature, humidity, latitude, longitude
+        SELECT device_id, recorded_at, temperature, humidity, latitude, longitude
         FROM v_field_sensor_lat_long
         WHERE temperature < %s;
         """
@@ -104,13 +116,13 @@ class DatabaseManager:
         except psycopg.Error as err:
             st.error(f"Database error: {err}")
 
-            empty_df = pd.DataFrame(columns=['deployment_id','recorded_at', 'temperature',
+            empty_df = pd.DataFrame(columns=['device_id','recorded_at', 'temperature',
                                              'humidity', 'latitude', 'longitude'])
             empty_long = pd.DataFrame(columns=['recorded_at', 'variable', 'value', 'hour', 'day'])
             return empty_df, empty_long
 
         if sensor_data.empty:
-            empty_df = pd.DataFrame(columns=['deployment_id', 'recorded_at', 'temperature',
+            empty_df = pd.DataFrame(columns=['device_id', 'recorded_at', 'temperature',
                                              'humidity', 'latitude', 'longitude'])
             empty_long = pd.DataFrame(columns=['recorded_at', 'variable', 'value', 'hour', 'day'])
             return empty_df, empty_long
@@ -230,7 +242,7 @@ class MapVisualizer:
 
     def __init__(self):
         self.tooltip = {
-            "html": "<b>Sensor:</b> {deployment_id} <br/>"
+            "html": "<b>Sensor:</b> {device_id} <br/>"
                    "<b>Temperature:</b> {temperature} °C <br/>"
                    "<b>Humidity:</b> {humidity}% <br/>",
             "style": {
@@ -262,11 +274,27 @@ class MapVisualizer:
 
         layers = self._create_map_layers(filtered_data)
 
+
+        # birdnet icon
+        special_point = pd.DataFrame([{'latitude': 33.0957347740747, 'longitude': -117.0015068946504}])
+        special_layer = pdk.Layer(
+            'ScatterplotLayer',
+            data=special_point,
+            get_position='[longitude, latitude]',
+            get_color='[0, 0, 255, 200]',  # blue dot, for example
+            get_radius=100,
+            pickable=True
+        )
+
+        layers = self._create_map_layers(filtered_data)
+        layers.append(special_layer)
+
         st.pydeck_chart(
             pdk.Deck(
                 layers=layers,
                 initial_view_state=pdk.ViewState(**MAP_CONFIG),
-                map_style="mapbox://styles/mapbox/light-v9",
+                #map_style="mapbox://styles/mapbox/light-v9",
+                map_style="mapbox://styles/mapbox/outdoors-v12",
                 tooltip=self.tooltip
             )
         )
@@ -275,14 +303,14 @@ class MapVisualizer:
                             selected_time: datetime) -> pd.DataFrame:
         """Filter sensor data for the selected time window"""
         if sensor_data.empty:
-            return pd.DataFrame(columns=['deployment_id', 'temperature',
+            return pd.DataFrame(columns=['device_id', 'temperature',
                                          'humidity', 'latitude', 'longitude'])
 
         time_window_start = selected_time - timedelta(hours=1)
         filtered_sensors = []
 
         for sensor in SENSORS:
-            sensor_subset = sensor_data[sensor_data['deployment_id'] == sensor]
+            sensor_subset = sensor_data[sensor_data['device_id'] == sensor]
             if sensor_subset.empty:
                 continue
 
@@ -297,7 +325,7 @@ class MapVisualizer:
                 filtered_sensors.append(latest_data)
 
         if not filtered_sensors:
-            return pd.DataFrame(columns=['deployment_id', 'temperature',
+            return pd.DataFrame(columns=['device_id', 'temperature',
                                          'humidity', 'latitude', 'longitude'])
 
         return pd.concat(filtered_sensors, ignore_index=True)
