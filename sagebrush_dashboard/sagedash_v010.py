@@ -1,11 +1,18 @@
+"""SageBrush dashboard UI using NiceGUI and Leaflet."""
+
+# Pylint notes:
+# - In some environments (e.g., base), `nicegui` may not be installed, so we ignore import-error.
+# - UI code uses short names (m, t, dt) and closure variables that pylint may mark unused.
+# pylint: disable=import-error,invalid-name,unused-variable,line-too-long
+
 from datetime import datetime, timedelta
 from statistics import mean
-from typing import Any, Dict, List, Optional, Tuple
-from nicegui import app
-app.add_static_files('/assets', 'assets')
+from typing import Any, Dict, List, Tuple
 
-from nicegui import ui
+from nicegui import app, ui
 from config.device_loader import load_device_config
+
+app.add_static_files("/assets", "assets")
 
 cfg = load_device_config("config/devices.yaml")
 
@@ -33,10 +40,11 @@ def flatten_items(cfg_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
 ITEMS = flatten_items(cfg)
 
 
-def make_time_range():
+def make_time_range() -> List[datetime]:
+    """Return timestamps at 30-minute intervals for the last 24 hours."""
     end = datetime.now()
     start = end - timedelta(days=1)
-    times = []
+    times: List[datetime] = []
     t = start
     while t <= end:
         times.append(t)
@@ -45,14 +53,21 @@ def make_time_range():
 
 
 def fmt(dt: datetime) -> str:
-    return dt.strftime('%d %B %Y, %I:%M %p')
+    """Format a datetime for display in the UI."""
+    return dt.strftime("%d %B %Y, %I:%M %p")
 
 
-@ui.page('/')
+# pylint: disable=too-many-locals,too-many-statements
+@ui.page("/")
 async def main_page():
-    ui.query('body').classes('bg-slate-900 m-0')
+    """Render the main SageBrush dashboard page."""
+    ui.query("body").classes("bg-slate-900 m-0")
 
-    coords = [(i["lat"], i["lon"]) for i in ITEMS if i.get("lat") is not None and i.get("lon") is not None]
+    coords = [
+        (i["lat"], i["lon"])
+        for i in ITEMS
+        if i.get("lat") is not None and i.get("lon") is not None
+    ]
     if coords:
         center_lat = mean(float(a) for a, _ in coords)
         center_lon = mean(float(b) for _, b in coords)
@@ -60,21 +75,21 @@ async def main_page():
         center_lat, center_lon = 33.095, -116.995
 
     times = make_time_range()
-    idx = {'value': len(times) - 1}
+    idx = {"value": len(times) - 1}  # noqa: F841
 
-    layer_state: Dict[str, bool] = {}           # key -> enabled
-    markers: Dict[str, Any] = {}                # device_id -> leaflet marker
-    map_ready = {"value": False}                # becomes True after await m.initialized()
-
-    item_lookup: Dict[Tuple[str, str, str], Dict[str, Any]] = {
-        (i["category"], i["subgroup"], i["id"]): i for i in ITEMS
+    layer_state: Dict[str, bool] = {}  # noqa: F841
+    markers: Dict[str, Any] = {}  # device_id -> leaflet marker
+    map_ready = {"value": False}  # becomes True after await m.initialized()
+    item_lookup: Dict[Tuple[str, str, str], Dict[str, Any]] = {  # noqa: F841
+        (i["category"], i["subgroup"], i["id"]): i
+        for i in ITEMS
     }
 
-    with ui.element('div').classes('relative w-full h-screen'):
-        m = ui.leaflet(center=(center_lat, center_lon), zoom=13).classes('w-full h-full')
+    with ui.element("div").classes("relative w-full h-screen"):
+        m = ui.leaflet(center=(center_lat, center_lon), zoom=13).classes("w-full h-full")
         m.tile_layer(
-            url_template='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            options={'maxZoom': 19},
+            url_template="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            options={"maxZoom": 19},
         )
 
         def has_location(item: Dict[str, Any]) -> bool:
@@ -93,21 +108,21 @@ async def main_page():
         def bind_popup(marker_obj: Any, item: Dict[str, Any]) -> None:
             if not map_ready["value"]:
                 return
-            m.run_layer_method(marker_obj.id, 'bindPopup', popup_html_for(item))
+            m.run_layer_method(marker_obj.id, "bindPopup", popup_html_for(item))
 
         def show_marker(item: Dict[str, Any]) -> None:
             dev_id = item["id"]
             if dev_id in markers:
                 return
             if not has_location(item):
-                ui.notify(f"No location for '{item['name']}' yet", type='warning')
+                ui.notify(f"No location for '{item['name']}' yet", type="warning")
                 return
 
             lat = float(item["lat"])
             lon = float(item["lon"])
             mk = m.marker(
                 latlng=(lat, lon),
-                options={'title': item.get('name', dev_id)},
+                options={"title": item.get("name", dev_id)},
             )
             markers[dev_id] = mk
             bind_popup(mk, item)
@@ -136,10 +151,14 @@ async def main_page():
         )
 
         layers_panel = ui.card().classes(
-            "fixed left-4 top-16 z-[9999] w-80 max-h-[80vh] overflow-auto shadow-lg bg-slate-900/90 border border-slate-700"
+            "fixed left-4 top-16 z-[9999] w-80 max-h-[80vh] overflow-auto shadow-lg bg-slate-900/90 border border-slate-700"  # noqa: E501
         )
 
-        def render_category(title: str, category_key: str, category_data: Dict[str, Any]) -> None:
+        def render_category(
+            title: str,
+            category_key: str,
+            category_data: Dict[str, Any],
+        ) -> None:
             with ui.expansion(title, value=True).classes("w-full text-white"):
                 if not category_data:
                     ui.label("No items").classes("text-sm text-slate-300")
@@ -168,7 +187,9 @@ async def main_page():
 
                             with ui.row().classes("items-center justify-between w-full"):
                                 ui.label(name).classes("text-sm text-slate-100")
-                                ui.switch(value=enabled).props("dense").on_value_change(on_toggle)
+                                ui.switch(value=enabled).props("dense").on_value_change(
+                                    on_toggle
+                                )
 
         with layers_panel:
             ui.label("Layers").classes("text-lg font-semibold text-white")
@@ -204,20 +225,22 @@ async def main_page():
             sanitize=False,
         )
 
-        with ui.column().classes('absolute left-4 top-20 z-[9999] gap-2'):
+        with ui.column().classes("absolute left-4 top-20 z-[9999] gap-2"):
             def zoom_in():
-                m.run_map_method('zoomIn')
+                m.run_map_method("zoomIn")
 
             def zoom_out():
-                m.run_map_method('zoomOut')
+                m.run_map_method("zoomOut")
 
             def home():
-                m.run_map_method('setView', [center_lat, center_lon], 13)
+                m.run_map_method("setView", [center_lat, center_lon], 13)
 
-            btn_cls = 'w-10 h-10 bg-slate-800/90 border border-slate-700 text-white rounded-lg shadow'
-            ui.button('+', on_click=zoom_in).classes(btn_cls)
-            ui.button('−', on_click=zoom_out).classes(btn_cls)
-            ui.button('⌂', on_click=home).classes(btn_cls)
+            btn_cls = (
+                "w-10 h-10 bg-slate-800/90 border border-slate-700 text-white rounded-lg shadow"
+            )
+            ui.button("+", on_click=zoom_in).classes(btn_cls)
+            ui.button("−", on_click=zoom_out).classes(btn_cls)
+            ui.button("⌂", on_click=home).classes(btn_cls)
 
         ui.html(
             """
@@ -246,21 +269,27 @@ async def main_page():
             sanitize=False,
         )
 
-        with ui.element('div').classes('absolute bottom-5 left-1/2 -translate-x-1/2 z-[9999] w-[70vw]'):
-            with ui.card().classes('w-full bg-slate-900/75 border border-slate-700 backdrop-blur p-3'):
-                time_label = ui.label(fmt(times[idx['value']])).classes('text-xs text-slate-200')
+        with ui.element("div").classes(
+            "absolute bottom-5 left-1/2 -translate-x-1/2 z-[9999] w-[70vw]"
+        ):
+            with ui.card().classes(
+                "w-full bg-slate-900/75 border border-slate-700 backdrop-blur p-3"
+            ):
+                time_label = ui.label(fmt(times[idx["value"]])).classes(
+                    "text-xs text-slate-200"
+                )
 
                 def on_time_change(value):
-                    idx['value'] = int(value)
-                    time_label.text = fmt(times[idx['value']])
+                    idx["value"] = int(value)
+                    time_label.text = fmt(times[idx["value"]])
 
                 ui.slider(
                     min=0,
                     max=len(times) - 1,
-                    value=idx['value'],
+                    value=idx["value"],
                     step=1,
                     on_change=on_time_change,
-                ).classes('w-full')
+                ).classes("w-full")
 
     await m.initialized()
     map_ready["value"] = True
@@ -270,4 +299,4 @@ async def main_page():
             apply_visibility(item, True)
 
 
-ui.run(title='SageBrush Dash (Map UI Overlay)')
+ui.run(title="SageBrush Dash (Map UI Overlay)")
