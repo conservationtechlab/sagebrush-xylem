@@ -1,18 +1,12 @@
-"""SageBrush dashboard UI using NiceGUI and Leaflet."""
-
-# Pylint notes:
-# - In some environments (e.g., base), `nicegui` may not be installed, so we ignore import-error.
-# - UI code uses short names (m, t, dt) and closure variables that pylint may mark unused.
-# pylint: disable=import-error,invalid-name,unused-variable,line-too-long
-
 from datetime import datetime, timedelta
 from statistics import mean
 from typing import Any, Dict, List, Tuple
 
-from nicegui import app, ui
 from config.device_loader import load_device_config
 
-app.add_static_files("/assets", "assets")
+from nicegui import ui, app
+
+app.add_static_files('/assets', 'assets')
 
 cfg = load_device_config("config/devices.yaml")
 
@@ -25,13 +19,13 @@ def flatten_items(cfg_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
         for subgroup, items in groups.items():
             for item in (items or []):
                 flat.append({
-                    "category": category_key,          # networking / sensors
-                    "subgroup": str(subgroup),         # lora_gateways / SageCam / ...
+                    "category": category_key,
+                    "subgroup": str(subgroup),
                     "id": str(item.get("id", "")),
                     "name": str(item.get("name", item.get("id", ""))),
                     "lat": item.get("lat", None),
                     "lon": item.get("lon", None),
-                    "icon": item.get("icon", None),    # used later in Task 5
+                    "icon": item.get("icon", None),  # e.g. assets/icons/zoo.jpg
                     "enabled": bool(item.get("enabled", True)),
                 })
     return flat
@@ -40,11 +34,10 @@ def flatten_items(cfg_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
 ITEMS = flatten_items(cfg)
 
 
-def make_time_range() -> List[datetime]:
-    """Return timestamps at 30-minute intervals for the last 24 hours."""
+def make_time_range():
     end = datetime.now()
     start = end - timedelta(days=1)
-    times: List[datetime] = []
+    times = []
     t = start
     while t <= end:
         times.append(t)
@@ -53,15 +46,21 @@ def make_time_range() -> List[datetime]:
 
 
 def fmt(dt: datetime) -> str:
-    """Format a datetime for display in the UI."""
-    return dt.strftime("%d %B %Y, %I:%M %p")
+    return dt.strftime('%d %B %Y, %I:%M %p')
 
 
-# pylint: disable=too-many-locals,too-many-statements
-@ui.page("/")
+@ui.page('/')
 async def main_page():
-    """Render the main SageBrush dashboard page."""
-    ui.query("body").classes("bg-slate-900 m-0")
+    ui.query('body').classes('bg-slate-900 m-0')
+    ui.add_head_html("""
+    <style>
+    /* Hide Leaflet default zoom (+ / -) buttons */
+    .leaflet-control-zoom {
+    display: none !important;
+    }
+    </style>
+    """)
+
 
     coords = [
         (i["lat"], i["lon"])
@@ -75,63 +74,89 @@ async def main_page():
         center_lat, center_lon = 33.095, -116.995
 
     times = make_time_range()
-    idx = {"value": len(times) - 1}  # noqa: F841
+    idx = {'value': len(times) - 1}
 
-    layer_state: Dict[str, bool] = {}  # noqa: F841
-    markers: Dict[str, Any] = {}  # device_id -> leaflet marker
-    map_ready = {"value": False}  # becomes True after await m.initialized()
-    item_lookup: Dict[Tuple[str, str, str], Dict[str, Any]] = {  # noqa: F841
-        (i["category"], i["subgroup"], i["id"]): i
-        for i in ITEMS
+    layer_state: Dict[str, bool] = {}   # key -> enabled
+    markers: Dict[str, Any] = {}        # device_id -> leaflet marker
+    map_ready = {"value": False}
+
+    item_lookup: Dict[Tuple[str, str, str], Dict[str, Any]] = {
+        (i["category"], i["subgroup"], i["id"]): i for i in ITEMS
     }
 
-    with ui.element("div").classes("relative w-full h-screen"):
-        m = ui.leaflet(center=(center_lat, center_lon), zoom=13).classes("w-full h-full")
+    with ui.element('div').classes('relative w-full h-screen'):
+        m = ui.leaflet(center=(center_lat, center_lon), zoom=13).classes('w-full h-full')
         m.tile_layer(
-            url_template="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            options={"maxZoom": 19},
+            url_template='https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+            options={'maxZoom': 17},
         )
 
-        def has_location(item: Dict[str, Any]) -> bool:
-            return item.get("lat") is not None and item.get("lon") is not None
 
         def popup_html_for(item: Dict[str, Any]) -> str:
-            return f"""
-            <div style="font-size:13px;line-height:1.4;">
-                <b>{item.get('name','')}</b><br>
-                Category: {item.get('category','')}<br>
-                Group: {item.get('subgroup','')}<br>
-                ID: {item.get('id','')}
-            </div>
-            """
+            return (
+                "<div style=\"font-size:13px;line-height:1.4;\">"
+                f"<b>{item.get('name','')}</b><br>"
+                f"Category: {item.get('category','')}<br>"
+                f"Group: {item.get('subgroup','')}<br>"
+                f"ID: {item.get('id','')}"
+                "</div>"
+            )
 
-        def bind_popup(marker_obj: Any, item: Dict[str, Any]) -> None:
-            if not map_ready["value"]:
-                return
-            m.run_layer_method(marker_obj.id, "bindPopup", popup_html_for(item))
-
+        # ---------- Task 5: custom icon (DivIcon) applied via setIcon ----------
         def show_marker(item: Dict[str, Any]) -> None:
             dev_id = item["id"]
             if dev_id in markers:
                 return
-            if not has_location(item):
-                ui.notify(f"No location for '{item['name']}' yet", type="warning")
+
+            if item.get("lat") is None or item.get("lon") is None:
+                ui.notify(f"No location for '{item.get('name', dev_id)}' yet", type='warning')
                 return
 
-            lat = float(item["lat"])
-            lon = float(item["lon"])
+            # Create marker first
             mk = m.marker(
-                latlng=(lat, lon),
-                options={"title": item.get("name", dev_id)},
+                latlng=(float(item["lat"]), float(item["lon"])),
+                options={'title': item.get("name", dev_id)},
             )
             markers[dev_id] = mk
-            bind_popup(mk, item)
+
+            # Then force icon (most compatible across NiceGUI Leaflet versions)
+            if item.get("icon"):
+                # YAML uses: assets/icons/zoo.jpg -> URL: /assets/icons/zoo.jpg
+                icon_url = "/" + str(item["icon"]).lstrip("/")
+
+                # Plain string (no backticks/template literals)
+                html = (
+                    "<div style='width:34px;height:34px;"
+                    "border-radius:8px;overflow:hidden;"
+                    "border:2px solid rgba(255,255,255,0.9);"
+                    "box-shadow:0 6px 14px rgba(0,0,0,0.35);"
+                    "background:rgba(0,0,0,0.15);'>"
+                    f"<img src=\"{icon_url}\" style='width:100%;height:100%;object-fit:cover;'/>"
+                    "</div>"
+                )
+
+                # Use Python repr to guarantee valid JS string quoting
+                js_icon = (
+                    ":L.divIcon({"
+                    "className: '',"
+                    f"html: {html!r},"
+                    "iconSize: [34,34],"
+                    "iconAnchor: [17,34],"
+                    "popupAnchor: [0,-34]"
+                    "})"
+                )
+
+                m.run_layer_method(mk.id, "setIcon", js_icon)
+
+            if map_ready["value"]:
+                m.run_layer_method(mk.id, 'bindPopup', popup_html_for(item))
 
         def hide_marker(item: Dict[str, Any]) -> None:
             dev_id = item["id"]
             mk = markers.pop(dev_id, None)
             if mk:
-                mk.remove()
+                # Reliable removal
+                m.run_map_method('removeLayer', mk.id)
 
         def apply_visibility(item: Dict[str, Any], visible: bool) -> None:
             if visible:
@@ -139,6 +164,7 @@ async def main_page():
             else:
                 hide_marker(item)
 
+        # ---- Layers panel (Task 3) ----
         panel_visible = {"value": True}
 
         def toggle_panel():
@@ -151,14 +177,11 @@ async def main_page():
         )
 
         layers_panel = ui.card().classes(
-            "fixed left-4 top-16 z-[9999] w-80 max-h-[80vh] overflow-auto shadow-lg bg-slate-900/90 border border-slate-700"  # noqa: E501
+            "fixed left-4 top-16 z-[9999] w-80 max-h-[80vh] overflow-auto shadow-lg "
+            "bg-slate-900/90 border border-slate-700"
         )
 
-        def render_category(
-            title: str,
-            category_key: str,
-            category_data: Dict[str, Any],
-        ) -> None:
+        def render_category(title: str, category_key: str, category_data: Dict[str, Any]) -> None:
             with ui.expansion(title, value=True).classes("w-full text-white"):
                 if not category_data:
                     ui.label("No items").classes("text-sm text-slate-300")
@@ -187,15 +210,14 @@ async def main_page():
 
                             with ui.row().classes("items-center justify-between w-full"):
                                 ui.label(name).classes("text-sm text-slate-100")
-                                ui.switch(value=enabled).props("dense").on_value_change(
-                                    on_toggle
-                                )
+                                ui.switch(value=enabled).props("dense").on_value_change(on_toggle)
 
         with layers_panel:
             ui.label("Layers").classes("text-lg font-semibold text-white")
             render_category("Networking", "networking", cfg.get("networking", {}))
             render_category("Sensors", "sensors", cfg.get("sensors", {}))
 
+        # ---- Title chip ----
         ui.html(
             """
             <div style="
@@ -225,28 +247,28 @@ async def main_page():
             sanitize=False,
         )
 
-        with ui.column().classes("absolute left-4 top-20 z-[9999] gap-2"):
+        # ---- Left controls ----
+        with ui.column().classes('absolute right-4 top-20 z-[9999] gap-2'):
             def zoom_in():
-                m.run_map_method("zoomIn")
+                m.run_map_method('zoomIn')
 
             def zoom_out():
-                m.run_map_method("zoomOut")
+                m.run_map_method('zoomOut')
 
             def home():
-                m.run_map_method("setView", [center_lat, center_lon], 13)
+                m.run_map_method('setView', [center_lat, center_lon], 13)
 
-            btn_cls = (
-                "w-10 h-10 bg-slate-800/90 border border-slate-700 text-white rounded-lg shadow"
-            )
-            ui.button("+", on_click=zoom_in).classes(btn_cls)
-            ui.button("−", on_click=zoom_out).classes(btn_cls)
-            ui.button("⌂", on_click=home).classes(btn_cls)
+            btn_cls = 'w-10 h-10 bg-slate-800/90 border border-slate-700 text-white rounded-lg shadow'
+            ui.button('+', on_click=zoom_in).classes(btn_cls)
+            ui.button('−', on_click=zoom_out).classes(btn_cls)
+            ui.button('⌂', on_click=home).classes(btn_cls)
 
+        # ---- Top-right mini map placeholder ----
         ui.html(
             """
             <div style="
                 position:absolute;
-                top:14px; right:14px;
+                top:14px; right:160px;
                 width:170px; height:120px;
                 background: rgba(255,255,255,.08);
                 border:1px solid rgba(255,255,255,.15);
@@ -269,34 +291,30 @@ async def main_page():
             sanitize=False,
         )
 
-        with ui.element("div").classes(
-            "absolute bottom-5 left-1/2 -translate-x-1/2 z-[9999] w-[70vw]"
-        ):
-            with ui.card().classes(
-                "w-full bg-slate-900/75 border border-slate-700 backdrop-blur p-3"
-            ):
-                time_label = ui.label(fmt(times[idx["value"]])).classes(
-                    "text-xs text-slate-200"
-                )
+        # ---- Bottom slider ----
+        with ui.element('div').classes('fixed bottom-0 left-0 right-0 z-[9999] px-4 pb-4'):
+            with ui.card().classes('w-full bg-slate-900/75 border border-slate-700 backdrop-blur p-3'):
+                time_label = ui.label(fmt(times[idx['value']])).classes('text-xs text-slate-200')
 
                 def on_time_change(value):
-                    idx["value"] = int(value)
-                    time_label.text = fmt(times[idx["value"]])
+                    idx['value'] = int(value)
+                    time_label.text = fmt(times[idx['value']])
 
                 ui.slider(
                     min=0,
                     max=len(times) - 1,
-                    value=idx["value"],
+                    value=idx['value'],
                     step=1,
                     on_change=on_time_change,
-                ).classes("w-full")
+                ).classes('w-full')
 
     await m.initialized()
     map_ready["value"] = True
 
+    # Render all enabled markers at startup
     for item in ITEMS:
         if item.get("enabled", True):
             apply_visibility(item, True)
 
 
-ui.run(title="SageBrush Dash (Map UI Overlay)")
+ui.run(title='SageBrush Dash (Map UI Overlay)')

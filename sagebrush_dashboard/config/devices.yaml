@@ -1,0 +1,38 @@
+networking:
+  lora_gateways:
+    - id: ridge_gateway_1
+      name: Ridge LoRa Gateway
+      lat: 33.09530
+      lon: -116.97910
+      enabled: true
+
+  nanobeams:
+    - id: nanobeam_1
+      name: Nanobeam Link
+      lat: 33.09550
+      lon: -116.97880
+      enabled: true
+
+sensors:
+  SageCam:
+    - id: A8404139F05E8D6B
+      name: SageCam 01
+      enabled: true
+
+  SageMic:
+    - id: A840414AFA5E8DB9
+      name: SageMic 01
+      enabled: true
+
+  TempSensors:
+    - id: boa_hills_temp_sensor
+      name: Boa Hills Temp Sensor
+      enabled: true
+
+    - id: ridge_gateway_temp_sensor_6
+      name: Ridge Gateway Temp 6
+      enabled: true
+
+    - id: ridge_gateway_temp_sensor_3
+      name: Ridge Gateway Temp 3
+      enabled: true
