@@ -175,13 +175,18 @@ async def main_page():
                 ui.select(
                     options=['Live', 'Playback', 'Archive'],
                     value='Live',
+                ).props(
+                    'dark'
                 ).classes(
-                    'text-white '
-                    'bg-transparent '
-                    'border border-slate-500 '
-                    'rounded px-3 py-2 '
-                    'text-sm font-medium'
-                    'shadow'
+                    'text-white font-semibold '
+                    'bg-slate-900 '
+                    'border border-slate-1000 '
+                    'rounded-md '
+                    'px-3 py-2 '
+                    'text-sm '
+                    'h-8'
+                    'flex items-center'
+                    'shadow-sm'
                 )
 
 
