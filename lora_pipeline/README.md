@@ -31,12 +31,12 @@ https://www.chirpstack.io/docs/getting-started/docker.html
 
 As noted in the docs, the default region is EU 868. For USA, the region needs to be US 915. This amounts to changing
 the docker-compose.yml file under chirpstack-gateway-bridge environment variables to the below:
-'''
+```
     environment:
       - INTEGRATION__MQTT__EVENT_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/event/{{ .EventType }}
       - INTEGRATION__MQTT__STATE_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/state/{{ .StateType }}
       - INTEGRATION__MQTT__COMMAND_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/command/#
-'''
+```
 #### Cell-enabled Gateways
 If you have any cell enabled gateways, or gateways that live outside the local network that Chirpstack is hosted on, IE on
 a Starlink wifi or elsewhere, you will need to open port 1700 for ingress. We use UDP for data transmission from the gateways, 
@@ -78,8 +78,53 @@ data from chirpstack (Dragino LHT65N), and post it to the database. You will nee
 - MQTT in node
 - Device Switch Node
 
+#### MQTT Broker Node
 For the MQTT broker node, you mainly need to input the ip address of your Chirpstack MQTT broker. If they are on the same internal
-network, it will just be the ip address of the machine its running on in that network.
+network, it will just be the ip address of the machine its running on in that network. If not, you will need to follow the instructions
+below to link the MQTT port from your chirpstack machine to the Node-Red machine. But for now, you can run the commands below to determine
+what IP will go into the 'server' box in the connection tab of the mqtt-broker node in node-red
+```
+sudo docker network ls
+```
+You should see sage_net as a NAME, if you used our example docker compose for nodered. Copy the network ID
+associated with that name for the following command:
+```
+sudo docker network inspect <NETWORK ID for sage_net> --format '{{(index .IPAM.Config 0).Gateway}}'
+```
+The IP address printed will be the ip address input into that chirpstack node.
 
-#### Finding the IP address to input in Node-Red for MQQT Broker if Chirpstack is hosted on a remote Docker. 
-You will need to create a tunnel on the remote machine to  
+#### MQTT in Node
+For this node you should see the server you just set up as the MQTT broker node in the 'server' box. But the 
+'Topic' box is what we'll change here, for grabbing ALL chirpstack events from all devices including the 
+gateway statuses, you can use the topic:
+```
+application/+/device/+/event/+
+```
+#### Device Switch Node
+In our example node-red flow, we put placeholders in the boxes, what will go here is the device EUI (from
+Chirpstack) for each device you would like to grab data from. We also like to name the following
+flows with the dev eui or other device identifyer to make the flows easier to read, but this is optional.
+
+##### SSH tunnel from remote Chirpstack to local Node-Red
+You will need to make a tunnel between your chirpstack mqtt and your node-red instance if they are on
+different networks. One method is:
+1) Put your public ssh key from your node-red machine onto your remote chirpstack machine.
+2) Determine the ip that your chirpstack is running on, which may be different than the public ip you
+use to ssh into. Run:
+```
+ip a
+```
+ 
+and look for something that's 10.x.x.x or 192.x.x.x or 172.x.x.x. Then from the local node-red machine:
+ 
+```
+autossh -N -f -L 0.0.0.0:1883:<internal ip of remote host>:1883 <user on remote host>:<public ip of remote host>
+```
+You can set up a systemd service to autoconnect on reboots.
+
+## Setting up PostGres server
+
+### Installing the postgres package into Node-Red
+Package info found here:https://flows.nodered.org/node/node-red-contrib-postgresql
+
+
