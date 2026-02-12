@@ -100,6 +100,13 @@ gateway statuses, you can use the topic:
 ```
 application/+/device/+/event/+
 ```
+
+*if using TTN, we use one topic per device rather than sharing one topic and differentiating between
+devices later. The example flow for TTN is also provided, but the topics for TTN will look more like:
+```
+v3/<your application>@<your instance>/devices/<name of sensor>/up
+```
+
 #### Device Switch Node
 In our example node-red flow, we put placeholders in the boxes, what will go here is the device EUI (from
 Chirpstack) for each device you would like to grab data from. We also like to name the following
