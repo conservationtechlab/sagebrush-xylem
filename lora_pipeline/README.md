@@ -26,3 +26,15 @@ If that is not possible on your local network for security reasons, host chirpst
 port opening is possible, such as a virtual machine. 
  
 ### Hosting Chirpstack
+We choose to host Chirpstack via Docker on an ubuntu machine, instructions found here:
+https://www.chirpstack.io/docs/getting-started/docker.html
+
+As noted in the docs, the default region is EU 868. For USA, the region needs to be US 915. This amounts to changing
+the docker-compose.yml file under chirpstack-gateway-bridge environment variables to the below:
+'''
+    environment:
+      - INTEGRATION__MQTT__EVENT_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/event/{{ .EventType }}
+      - INTEGRATION__MQTT__STATE_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/state/{{ .StateType }}
+      - INTEGRATION__MQTT__COMMAND_TOPIC_TEMPLATE=us915_0/gateway/{{ .GatewayID }}/command/#
+'''
+
