@@ -1,0 +1,663 @@
+[
+    {
+        "id": "f163dcb02d712f9c",
+        "type": "tab",
+        "label": "BDR",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "fabd487fcb6c7f06",
+        "type": "group",
+        "z": "f163dcb02d712f9c",
+        "name": "Test Query",
+        "style": {
+            "label": true,
+            "label-position": "n",
+            "color": "#000000",
+            "stroke": "#92d04f"
+        },
+        "nodes": [
+            "4c1edbce9d16529e",
+            "b1bf06e8a12133e8",
+            "82776fd057524fbb"
+        ],
+        "x": 814,
+        "y": 339,
+        "w": 612,
+        "h": 82
+    },
+    {
+        "id": "5ed0fc7322b3031e",
+        "type": "group",
+        "z": "f163dcb02d712f9c",
+        "name": "Weather Stations",
+        "style": {
+            "stroke": "#0070c0",
+            "fill": "#bfdbef",
+            "label": true,
+            "label-position": "n",
+            "color": "#000000"
+        },
+        "nodes": [
+            "0b132d38d12feb58",
+            "f82db7f6c483b189",
+            "95ec052fec068442"
+        ],
+        "x": 854,
+        "y": 499,
+        "w": 572,
+        "h": 122
+    },
+    {
+        "id": "e8fe6ad52461d816",
+        "type": "group",
+        "z": "f163dcb02d712f9c",
+        "name": "Temp Sensors",
+        "style": {
+            "stroke": "#ff0000",
+            "fill": "#ffbfbf",
+            "label": true,
+            "label-position": "n",
+            "color": "#000000"
+        },
+        "nodes": [
+            "4fed7cbd48b3f60b",
+            "e0c3c0e3f2f762b9",
+            "11a42c399cae8c38",
+            "2fc90777d83b0c98",
+            "f2e881f3defb5d98",
+            "ef70b06036d09961",
+            "ec054a15fd355a37",
+            "e0b62ff285070fec",
+            "5dab9072e46c5670",
+            "65eb071c574b091c",
+            "9b20321aa3a3479c"
+        ],
+        "x": 774,
+        "y": 739,
+        "w": 952,
+        "h": 182
+    },
+    {
+        "id": "dc6bae1d7825bde3",
+        "type": "mqtt in",
+        "z": "f163dcb02d712f9c",
+        "name": "",
+        "topic": "application/+/device/+/event/+",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "fd03310db09e0eb7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 160,
+        "y": 860,
+        "wires": [
+            [
+                "15c97c85239353f4"
+            ]
+        ]
+    },
+    {
+        "id": "15c97c85239353f4",
+        "type": "device event",
+        "z": "f163dcb02d712f9c",
+        "name": "",
+        "eventType": "up",
+        "x": 410,
+        "y": 860,
+        "wires": [
+            [
+                "c774f465d07bdd69",
+                "0edfb51e87c743f0",
+                "384145ccd7ef9abb"
+            ]
+        ]
+    },
+    {
+        "id": "c774f465d07bdd69",
+        "type": "switch",
+        "z": "f163dcb02d712f9c",
+        "name": "",
+        "property": "payload.deviceInfo.devEui",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "dev eui of sensor seen on chirpstack",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "dev eui of sensor seen on chirpstack",
+                "vt": "str"
+            }
+        ],
+        "checkall": "false",
+        "repair": false,
+        "outputs": 2,
+        "x": 610,
+        "y": 860,
+        "wires": [
+            [
+                "65eb071c574b091c"
+            ],
+            [
+                "f2e881f3defb5d98"
+            ]
+        ]
+    },
+    {
+        "id": "0b132d38d12feb58",
+        "type": "debug",
+        "z": "f163dcb02d712f9c",
+        "g": "5ed0fc7322b3031e",
+        "name": "weather_station debug (lora payload)",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1030,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "25bd057bf74833ab",
+        "type": "comment",
+        "z": "f163dcb02d712f9c",
+        "name": "Example README",
+        "info": "Example flow for getting data from a \nDragino LHT65N from Chirpstack into\nSageBase database.\n\nPortions of places where you will need\nto input your own ip addresses, ports, \ndatabase usernames and passwords addresses\nare labeled. ",
+        "x": 190,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "f82db7f6c483b189",
+        "type": "function",
+        "z": "f163dcb02d712f9c",
+        "g": "5ed0fc7322b3031e",
+        "name": "weather_station",
+        "func": "\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 540,
+        "wires": [
+            [
+                "95ec052fec068442"
+            ]
+        ]
+    },
+    {
+        "id": "95ec052fec068442",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "5ed0fc7322b3031e",
+        "name": "",
+        "query": "SELECT * FROM ;",
+        "postgreSQLConfig": "",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1330,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4fed7cbd48b3f60b",
+        "type": "function",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "name of sensor",
+        "func": "function uuidv4() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        const v = c === 'x' ? r : (r & 0x3 | 0x8);\n        return v.toString(16);\n    });\n}\n\nmsg.info = msg.payload\n\nconst pad = (n) => n.toString().padStart(2, \"0\");\n\nconst now = new Date();\nconst pacificDateStr = now.toLocaleString(\"en-US\", {\n    timeZone: \"America/Los_Angeles\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    second: \"2-digit\",\n    hour12: false\n});\n\nconst [datePart, timePart] = pacificDateStr.split(\", \");\nconst [month, day, year] = datePart.split(\"/\");\nconst recorded_at = `${year}-${pad(month)}-${pad(day)} ${timePart}`;\nmsg.recorded_at = recorded_at\n\nmsg.uuid = uuidv4();\n\nmsg.params = [\n    msg.uuid,\n    \"\",\n    \"weather sensor\",\n    recorded_at\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 880,
+        "wires": [
+            [
+                "e0c3c0e3f2f762b9"
+            ]
+        ]
+    },
+    {
+        "id": "e0c3c0e3f2f762b9",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "",
+        "query": "INSERT INTO public.event (\n    event_id,\n    deployment_id,\n    \"type\",\n    start_time\n) VALUES ($1, $2, $3, $4);",
+        "postgreSQLConfig": "06e9e296b409092d",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1330,
+        "y": 880,
+        "wires": [
+            [
+                "11a42c399cae8c38"
+            ]
+        ]
+    },
+    {
+        "id": "11a42c399cae8c38",
+        "type": "function",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "function 3",
+        "func": "msg.params = [\n    msg.uuid,\n    msg.recorded_at,\n    msg.info.TempC_SHT, // int_temperature\n    msg.info.TempC_DS,  // ext_temperature\n    msg.info.Hum_SHT,   // humidity\n    msg.info.BatV       // bat_v\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 880,
+        "wires": [
+            [
+                "2fc90777d83b0c98"
+            ]
+        ]
+    },
+    {
+        "id": "2fc90777d83b0c98",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "",
+        "query": "INSERT INTO public.field_sensor_data (\n    event_id,\n    recorded_at,\n    int_temperature,\n    ext_temperature,\n    humidity,\n    bat_v\n) VALUES ($1, $2, $3, $4, $5, $6)",
+        "postgreSQLConfig": "06e9e296b409092d",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1630,
+        "y": 880,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "4c1edbce9d16529e",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "fabd487fcb6c7f06",
+        "name": "test query",
+        "query": "SELECT * FROM v_field_sensor_lat_long_last_dt;",
+        "postgreSQLConfig": "06e9e296b409092d",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1080,
+        "y": 380,
+        "wires": [
+            [
+                "82776fd057524fbb"
+            ]
+        ]
+    },
+    {
+        "id": "b1bf06e8a12133e8",
+        "type": "inject",
+        "z": "f163dcb02d712f9c",
+        "g": "fabd487fcb6c7f06",
+        "name": "TEST",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 910,
+        "y": 380,
+        "wires": [
+            [
+                "4c1edbce9d16529e"
+            ]
+        ]
+    },
+    {
+        "id": "82776fd057524fbb",
+        "type": "debug",
+        "z": "f163dcb02d712f9c",
+        "g": "fabd487fcb6c7f06",
+        "name": "test query debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "f2e881f3defb5d98",
+        "type": "change",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "dev eui of sensor",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.object",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 890,
+        "y": 880,
+        "wires": [
+            [
+                "4fed7cbd48b3f60b"
+            ]
+        ]
+    },
+    {
+        "id": "834a81a9e8bf98e4",
+        "type": "debug",
+        "z": "f163dcb02d712f9c",
+        "name": "debug 6",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 620,
+        "y": 1000,
+        "wires": []
+    },
+    {
+        "id": "0edfb51e87c743f0",
+        "type": "change",
+        "z": "f163dcb02d712f9c",
+        "name": "payload",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.object",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 480,
+        "y": 1000,
+        "wires": [
+            [
+                "834a81a9e8bf98e4"
+            ]
+        ]
+    },
+    {
+        "id": "384145ccd7ef9abb",
+        "type": "debug",
+        "z": "f163dcb02d712f9c",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 480,
+        "y": 1060,
+        "wires": []
+    },
+    {
+        "id": "ef70b06036d09961",
+        "type": "function",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "name of sensor",
+        "func": "function uuidv4() {\n    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {\n        const r = Math.random() * 16 | 0;\n        const v = c === 'x' ? r : (r & 0x3 | 0x8);\n        return v.toString(16);\n    });\n}\n\nmsg.info = msg.payload\n\nconst pad = (n) => n.toString().padStart(2, \"0\");\n\nconst now = new Date();\nconst pacificDateStr = now.toLocaleString(\"en-US\", {\n    timeZone: \"America/Los_Angeles\",\n    year: \"numeric\",\n    month: \"2-digit\",\n    day: \"2-digit\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    second: \"2-digit\",\n    hour12: false\n});\n\nconst [datePart, timePart] = pacificDateStr.split(\", \");\nconst [month, day, year] = datePart.split(\"/\");\nconst recorded_at = `${year}-${pad(month)}-${pad(day)} ${timePart}`;\nmsg.recorded_at = recorded_at\n\nmsg.uuid = uuidv4();\n\nmsg.params = [\n    msg.uuid,\n    \"\",\n    \"weather sensor\",\n    recorded_at\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 820,
+        "wires": [
+            [
+                "ec054a15fd355a37",
+                "50f9a3b1df40b706"
+            ]
+        ]
+    },
+    {
+        "id": "ec054a15fd355a37",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "",
+        "query": "INSERT INTO public.event (\n    event_id,\n    deployment_id,\n    \"type\",\n    start_time\n) VALUES ($1, $2, $3, $4);",
+        "postgreSQLConfig": "06e9e296b409092d",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1330,
+        "y": 820,
+        "wires": [
+            [
+                "e0b62ff285070fec"
+            ]
+        ]
+    },
+    {
+        "id": "e0b62ff285070fec",
+        "type": "function",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "function 8",
+        "func": "msg.params = [\n    msg.uuid,\n    msg.recorded_at,\n    msg.info.TempC_SHT, // int_temperature\n    msg.info.TempC_DS,  // ext_temperature\n    msg.info.Hum_SHT,   // humidity\n    msg.info.BatV       // bat_v\n];\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 820,
+        "wires": [
+            [
+                "5dab9072e46c5670"
+            ]
+        ]
+    },
+    {
+        "id": "5dab9072e46c5670",
+        "type": "postgresql",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "",
+        "query": "INSERT INTO public.field_sensor_data (\n    event_id,\n    recorded_at,\n    int_temperature,\n    ext_temperature,\n    humidity,\n    bat_v\n) VALUES ($1, $2, $3, $4, $5, $6)",
+        "postgreSQLConfig": "06e9e296b409092d",
+        "split": false,
+        "rowsPerMsg": 1,
+        "outputs": 1,
+        "x": 1630,
+        "y": 820,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "65eb071c574b091c",
+        "type": "change",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "dev eui of sensor",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.object",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 890,
+        "y": 820,
+        "wires": [
+            [
+                "ef70b06036d09961"
+            ]
+        ]
+    },
+    {
+        "id": "50f9a3b1df40b706",
+        "type": "debug",
+        "z": "f163dcb02d712f9c",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "9cb5c438c7f4aca5",
+        "type": "comment",
+        "z": "f163dcb02d712f9c",
+        "name": "CHANGE THIS",
+        "info": "To your chirpstack server ip and port.",
+        "x": 160,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "9b20321aa3a3479c",
+        "type": "comment",
+        "z": "f163dcb02d712f9c",
+        "g": "e8fe6ad52461d816",
+        "name": "CHANGE THIS",
+        "info": "The postgres server information, \nthe ip, port, and username and\npassword of the database.",
+        "x": 1340,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "83283da7f175c42c",
+        "type": "comment",
+        "z": "f163dcb02d712f9c",
+        "name": "CHANGE THIS",
+        "info": "To the dev eui of each sensor",
+        "x": 620,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "fd03310db09e0eb7",
+        "type": "mqtt-broker",
+        "name": "chirpstack",
+        "broker": "INSERT CHIRPSTACK IP OR SAGE_NET DOCKER IP",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "06e9e296b409092d",
+        "type": "postgreSQLConfig",
+        "name": "",
+        "host": "POSTGRES HOST",
+        "hostFieldType": "str",
+        "port": "POSTGRES PORT",
+        "portFieldType": "num",
+        "database": "sagebase",
+        "databaseFieldType": "str",
+        "ssl": "false",
+        "sslFieldType": "bool",
+        "applicationName": "",
+        "applicationNameType": "str",
+        "max": 10,
+        "maxFieldType": "num",
+        "idle": 1000,
+        "idleFieldType": "num",
+        "connectionTimeout": 10000,
+        "connectionTimeoutFieldType": "num",
+        "user": "",
+        "userFieldType": "str",
+        "password": "",
+        "passwordFieldType": "str"
+    }
+]
