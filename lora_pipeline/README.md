@@ -19,7 +19,8 @@ you have internet.
 For a local setup, Chirpstack can be run on any machine within your local network.
 IE, if all your gateways have an ip address that is on the same subnet as your chirpstack server.
 
-If you have any cell enabled gateways, you need port 1700 open for ingress on the machine hosting chirpstack. 
+If you have any cell enabled gateways, or gateways connected to any internet
+that is not within your chirpstack server network, you will need port 1700 open for ingress on the machine hosting chirpstack. 
 
 If that is not possible on your local network for security reasons, host chirpstack on a remote machine where this
 port opening is possible, such as a virtual machine. 
