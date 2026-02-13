@@ -1,4 +1,6 @@
 ## So, you want your LoRa devices to post their data to your SageBase database and frontend. What now?
+
+![Basic Workflow](SageBase.png)
  
 You will need:
 
