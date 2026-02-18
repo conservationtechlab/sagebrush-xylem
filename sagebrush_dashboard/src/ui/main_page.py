@@ -22,7 +22,6 @@ async def main_page():
         if coords else (33.095, -116.995)
     )
 
-    # Page style
     ui.query('body').classes('bg-slate-900 m-0')
 
     times = make_time_range()
@@ -75,7 +74,7 @@ async def main_page():
             layers_button.set_visibility(not panel_open['value'])
 
         # ----------------------------
-        # LAYERS BUTTON (TOP-RIGHT)
+        # LAYERS BUTTON
         # ----------------------------
         layers_button = ui.button(
             icon='layers',
@@ -87,7 +86,7 @@ async def main_page():
         ).tooltip('Open layer list')
 
         # ----------------------------
-        # LAYERS PANEL (TOP-RIGHT)
+        # LAYERS PANEL
         # ----------------------------
         layers_panel = ui.card().classes(
             'fixed right-4 top-4 z-[9998] w-80 '
@@ -100,18 +99,50 @@ async def main_page():
                 ui.label('Layers').classes('text-lg font-semibold')
                 ui.button('Close', on_click=toggle_layers).props('flat')
 
+            # 🔥 GROUP + CHILD TOGGLES (FIXED VERSION)
             for category, cat_items in grouped.items():
-                with ui.expansion(category):
+
+                group_checkbox = ui.checkbox(category, value=True).classes('font-semibold')
+
+                # Create independent list per group
+                child_checkboxes: List[Any] = []
+
+                # ---- GROUP TOGGLE FACTORY ----
+                def make_group_toggle(cat_items, child_checkboxes):
+                    def on_group_toggle(e):
+                        for it in cat_items:
+                            if e.value:
+                                add_marker(it)
+                            else:
+                                remove_marker(it)
+
+                        for chk in child_checkboxes:
+                            chk.value = e.value
+                    return on_group_toggle
+
+                group_checkbox.on_value_change(
+                    make_group_toggle(cat_items, child_checkboxes)
+                )
+
+                # ---- CHILD CHECKBOXES ----
+                with ui.column().classes('ml-6'):
                     for it in cat_items:
+
                         chk = ui.checkbox(it.get('name', it['id']), value=True)
+                        child_checkboxes.append(chk)
 
-                        def _toggle(e, it=it):
-                            add_marker(it) if e.value else remove_marker(it)
+                        def make_child_toggle(it):
+                            def on_child_toggle(e):
+                                if e.value:
+                                    add_marker(it)
+                                else:
+                                    remove_marker(it)
+                            return on_child_toggle
 
-                        chk.on_value_change(_toggle)
+                        chk.on_value_change(make_child_toggle(it))
 
         # ----------------------------
-        # ALERTCalifornia-style bottom bar
+        # Bottom bar (unchanged)
         # ----------------------------
         playing = {'value': False}
 
@@ -124,7 +155,6 @@ async def main_page():
                 'backdrop-blur'
             ):
 
-                # ---- Playback controls ----
                 def rewind():
                     idx['value'] = max(0, idx['value'] - 1)
                     timeline.value = idx['value']
@@ -153,7 +183,6 @@ async def main_page():
                 play_btn = ui.button('▶', on_click=toggle_play).classes('text-white')
                 ui.button('⏭', on_click=forward).classes('text-white')
 
-                # ---- Timeline ----
                 time_label = ui.label(
                     fmt(times[idx['value']])
                 ).classes('text-xs text-slate-200 w-48 text-center')
@@ -170,28 +199,17 @@ async def main_page():
                     on_change=on_timeline_change,
                 ).classes('flex-1')
 
-                # ---- Right dropdown ----
-
                 ui.select(
                     options=['Live', 'Playback', 'Archive'],
                     value='Live',
-                ).props(
-                    'dark'
-                ).classes(
+                ).props('dark').classes(
                     'text-white font-semibold '
-                    'bg-slate-900 '
-                    'border border-slate-1000 '
-                    'rounded-md '
-                    'px-3 py-2 '
-                    'text-sm '
-                    'h-8'
-                    'flex items-center'
-                    'shadow-sm'
+                    'bg-slate-900 rounded-md px-3 py-2 text-sm h-8 '
+                    'flex items-center shadow-sm'
                 )
 
-
     # ----------------------------
-    # Finalize map (MUST stay inside async function)
+    # Finalize map
     # ----------------------------
     await m.initialized()
     map_ready['value'] = True
