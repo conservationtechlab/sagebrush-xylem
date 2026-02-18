@@ -3,7 +3,7 @@ from nicegui import ui
 
 
 def create_map(center_lat, center_lon):
-    m = ui.leaflet(center=(center_lat, center_lon), zoom=16).classes('w-full h-full')
+    m = ui.leaflet(center=(center_lat, center_lon), zoom=15).classes('w-full h-full')
     m.tile_layer(
         url_template='https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
         options={'maxZoom': 17},
