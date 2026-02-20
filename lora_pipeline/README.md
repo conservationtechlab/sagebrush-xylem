@@ -1,11 +1,19 @@
 ## So, you want your LoRa devices to post their data to your SageBase database and frontend. What now?
 
 ![Basic Workflow](SageBase.png)
- 
+
 You will need:
 
 	- A LoRa Server
 	- Node-Red
+        - PostgreSQL
+
+*Hardware requirements and options can be found here: https://github.com/conservationtechlab/sagebrush_hardware
+**Minimum requirements to run the example Node-Red flow include:
+
+	- LoRa gateway
+	- Dragino LHT65N Temperature and Humidity Sensor
+	- Ubuntu VM or Ubuntu Laptop/Desktop
 
 Which LoRa server should you choose?
 | Server | Cost | Set-up difficulty | Connectivity Constraints |
@@ -79,6 +87,8 @@ data from chirpstack (Dragino LHT65N), and post it to the database. You will nee
 - MQTT Broker Node
 - MQTT in node
 - Device Switch Node
+- Function Node
+- PostgreSQL Config Node
 
 #### MQTT Broker Node
 For the MQTT broker node, you mainly need to input the ip address of your Chirpstack MQTT broker. If they are on the same internal
@@ -114,6 +124,26 @@ In our example node-red flow, we put placeholders in the boxes, what will go her
 Chirpstack) for each device you would like to grab data from. We also like to name the following
 flows with the dev eui or other device identifyer to make the flows easier to read, but this is optional.
 
+#### Function Node
+Line 34 for each function node will need to contain a unique UUID to be injected into the database. We recommend
+you make your own and add it here once- it will be added into the database with each post. We recommend UUIDv7, 
+which contains a time stamp encrypted into the UUID, this can make sorting easier later.
+
+#### PostgreSQL Config Node
+This needs to only be configured once, and will be based off the information found in the docker-compose for
+the postgres docker. Instructions for install can be found below, and those values can be added to this node.
+
+Mainly:
+
+| Node-Red line | PostgresSQL docker-compose line |
+| --- | --- |
+| Host | container_name |
+| Port | "xxxx:**xxxx**"|
+| Database | POSTGRES_DB |
+| User | POSTGRES_USER |
+| Password | POSTGRES_PASSWORD |
+
+
 ##### SSH tunnel from remote Chirpstack to local Node-Red
 You will need to make a tunnel between your chirpstack mqtt and your node-red instance if they are on
 different networks. One method is:
@@ -131,9 +161,20 @@ autossh -N -f -L 0.0.0.0:1883:<internal ip of remote host>:1883 <user on remote 
 ```
 You can set up a systemd service to autoconnect on reboots.
 
-## Setting up PostGres server
+# PostgresSQL server
+
+### Running Postgres docker
+The official docker for postgres is found here: https://hub.docker.com/_/postgres
+
+We recommend versions >=18, as they support UUIDv7.
+
+Follow the docker-compose instructions. We have included a version of the postgres docker
+compose you can use and modify for your needs, keeping the sage_net docker name as in the
+nodered docker compose file.
 
 ### Installing the postgres package into Node-Red
 Package info found here:https://flows.nodered.org/node/node-red-contrib-postgresql
+
+
 
 

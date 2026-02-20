@@ -1,0 +1,30 @@
+################################################################################
+# Node-RED Stack or Compose
+################################################################################
+# docker stack deploy node-red --compose-file docker-compose-node-red.yml
+# docker-compose -f docker-compose-node-red.yml -p myNoderedProject up
+################################################################################
+version: "<INSERT NODERED VERSION>"
+
+services:
+  node-red:
+    image: nodered/node-red:latest
+    container_name: nodered-sage/
+    environment:
+      - TZ=America/Los_Angeles # or your own locale
+    ports:
+      - "1880:1880"
+    volumes:
+      - <PATH TO LOCAL NODERED INSTAL>/data:/data
+    restart: unless-stopped
+
+    networks:
+      - sage_net
+
+volumes:
+  node-red-data:
+
+networks:
+  sage_net:
+    external: true
+
