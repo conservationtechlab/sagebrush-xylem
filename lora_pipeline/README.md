@@ -6,7 +6,7 @@ You will need:
 
 	- A LoRa Server
 	- Node-Red
-        - PostgreSQL
+	- PostgreSQL
 
 *Hardware requirements and options can be found here: https://github.com/conservationtechlab/sagebrush_hardware
 **Minimum requirements to run the example Node-Red flow include:
@@ -161,7 +161,7 @@ autossh -N -f -L 0.0.0.0:1883:<internal ip of remote host>:1883 <user on remote 
 ```
 You can set up a systemd service to autoconnect on reboots.
 
-# PostgresSQL server
+# PostgreSQL server
 
 ### Running Postgres docker
 The official docker for postgres is found here: https://hub.docker.com/_/postgres
