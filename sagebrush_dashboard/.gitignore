@@ -2,3 +2,9 @@ runenv/
 venv/
 __pycache__/
 *.pyc
+
+# Local DB credentials
+src/database/db_credentials.json
+
+# Generated device file
+src/database/devices.json

@@ -2,21 +2,28 @@ from typing import Dict, Any, List
 from statistics import mean
 
 from nicegui import ui
-from config.device_loader import load_device_config
 
+from src.database.fetch_device_coordinates import get_devices, categorize_devices
 from src.mapping.map_view import create_map, popup_html
-from src.scripts.data_arch import flatten_items, make_time_range, fmt
+from src.scripts.data_arch import make_time_range, fmt
 
 
 @ui.page('/')
 async def main_page():
+
     # ----------------------------
-    # Load data
+    # Load devices from DB
     # ----------------------------
-    cfg = load_device_config('config/devices.yaml')
-    items = flatten_items(cfg)
+    devices = get_devices()
+    categorized_layers = categorize_devices(devices)
+
+    # Flatten all devices for global marker handling
+    items: List[Dict[str, Any]] = []
+    for layer_devices in categorized_layers.values():
+        items.extend(layer_devices)
 
     coords = [(i['lat'], i['lon']) for i in items if i.get('lat') and i.get('lon')]
+
     center_lat, center_lon = (
         (mean(a for a, _ in coords), mean(b for _, b in coords))
         if coords else (33.095, -116.995)
@@ -31,35 +38,36 @@ async def main_page():
     map_ready = {'value': False}
 
     # ----------------------------
-    # Group items by category
+    # Use DB-driven grouped layers
     # ----------------------------
-    grouped: Dict[str, List[Dict[str, Any]]] = {}
-    for it in items:
-        cat = it.get('category', 'Other')
-        grouped.setdefault(cat, []).append(it)
+    grouped = categorized_layers
 
     # ----------------------------
     # Map container
     # ----------------------------
     with ui.element('div').classes('relative w-full h-screen'):
+
         m = create_map(center_lat, center_lon)
 
         # ----------------------------
         # Marker helpers
         # ----------------------------
         def add_marker(it):
-            if it['id'] in markers or not it.get('lat') or not it.get('lon'):
+            if it['device_id'] in markers or not it.get('lat') or not it.get('lon'):
                 return
+
             mk = m.marker(
                 latlng=(float(it['lat']), float(it['lon'])),
-                options={'title': it.get('name', it['id'])},
+                options={'title': it['device_id']},
             )
-            markers[it['id']] = mk
+
+            markers[it['device_id']] = mk
+
             if map_ready['value']:
                 m.run_layer_method(mk.id, 'bindPopup', popup_html(it))
 
         def remove_marker(it):
-            mk = markers.pop(it['id'], None)
+            mk = markers.pop(it['device_id'], None)
             if mk:
                 m.remove_layer(mk)
 
@@ -82,32 +90,33 @@ async def main_page():
         ).props('flat').classes(
             'fixed right-4 top-4 z-[9999] '
             'bg-blue-400 text-white '
-            'rounded-md shadow px-2 py-2 '
+            'rounded-md shadow px-2 py-2'
         ).tooltip('Open layer list')
 
         # ----------------------------
         # LAYERS PANEL
         # ----------------------------
         layers_panel = ui.card().classes(
-            'fixed right-4 top-4 z-[9998] w-80 '
-            'bg-white shadow-xl rounded-lg p-3'
+            'fixed right-4 top-16 z-[9998] w-80 '
+            'bg-white shadow-xl rounded-lg p-3 '
+            'max-h-[80vh] overflow-y-auto'
         )
         layers_panel.set_visibility(False)
 
         with layers_panel:
+
             with ui.row().classes('items-center justify-between mb-3'):
                 ui.label('Layers').classes('text-lg font-semibold')
                 ui.button('Close', on_click=toggle_layers).props('flat')
 
-            # 🔥 GROUP + CHILD TOGGLES (FIXED VERSION)
+            # ----------------------------
+            # GROUP + CHILD TOGGLES
+            # ----------------------------
             for category, cat_items in grouped.items():
 
                 group_checkbox = ui.checkbox(category, value=True).classes('font-semibold')
-
-                # Create independent list per group
                 child_checkboxes: List[Any] = []
 
-                # ---- GROUP TOGGLE FACTORY ----
                 def make_group_toggle(cat_items, child_checkboxes):
                     def on_group_toggle(e):
                         for it in cat_items:
@@ -118,17 +127,17 @@ async def main_page():
 
                         for chk in child_checkboxes:
                             chk.value = e.value
+
                     return on_group_toggle
 
                 group_checkbox.on_value_change(
                     make_group_toggle(cat_items, child_checkboxes)
                 )
 
-                # ---- CHILD CHECKBOXES ----
                 with ui.column().classes('ml-6'):
                     for it in cat_items:
 
-                        chk = ui.checkbox(it.get('name', it['id']), value=True)
+                        chk = ui.checkbox(it['device_id'], value=True)
                         child_checkboxes.append(chk)
 
                         def make_child_toggle(it):
@@ -137,12 +146,13 @@ async def main_page():
                                     add_marker(it)
                                 else:
                                     remove_marker(it)
+
                             return on_child_toggle
 
                         chk.on_value_change(make_child_toggle(it))
 
         # ----------------------------
-        # Bottom bar (unchanged)
+        # Bottom bar
         # ----------------------------
         playing = {'value': False}
 
