@@ -1,0 +1,29 @@
+version: '<POSTGRES VERSION>'
+
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    container_name: postgis-sagebase
+    ports:
+      - "<HOST PORT>:5432" # host port can be same as left side or different port
+    volumes:
+      - <LOCAL PATH TO POSTRES>/sagebase/db/:/var/lib/postgresql
+    environment:
+      TZ: 'America/Los_Angeles'
+      PGTZ: 'America/Los_Angeles'
+      POSTGRES_USER: <INSERT USERNAME>
+      POSTGRES_PASSWORD: <INSERT PASSWORD>
+      POSTGRES_DB: sagebase
+    restart: unless-stopped
+
+    networks:
+      - sage_net 
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sage_net:
+    external: true
+
