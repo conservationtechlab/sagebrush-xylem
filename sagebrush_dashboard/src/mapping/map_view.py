@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 from nicegui import ui
 
 
@@ -44,3 +44,23 @@ def set_custom_icon(map_obj, marker, icon_path: str):
     )
 
     map_obj.run_layer_method(marker.id, "setIcon", js_icon)
+
+def add_boundary_polygon(map_obj, name: str, latlngs: List[Tuple[float, float]]):
+    """
+    Add a boundary polygon to the NiceGUI Leaflet map using generic_layer.
+
+    IMPORTANT:
+    This NiceGUI version expects args like:
+      [":L.polygon", latlngs, options]
+    not a single JS expression string.
+    """
+    latlngs_js = [[lat, lon] for lat, lon in latlngs]
+
+    options = {
+        "color": "#FF00FF",      # bright magenta so you can't miss it
+        "weight": 6,
+        "fill": True,
+        "fillOpacity": 0.18,
+    }
+
+    return map_obj.generic_layer(name=name, args=[":L.polygon", latlngs_js, options])
