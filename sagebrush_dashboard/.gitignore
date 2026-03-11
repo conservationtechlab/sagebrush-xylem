@@ -1,3 +1,6 @@
+*.save
+*pagepage.py
+
 runenv/
 venv/
 __pycache__/
