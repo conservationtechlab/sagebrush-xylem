@@ -12,12 +12,31 @@ def create_map(center_lat, center_lon):
 
 
 def popup_html(item: Dict[str, Any]) -> str:
+    device_id = item.get('device_id', 'N/A')
+    device_name = item.get('device_name') or device_id
+    category = item.get('category', 'N/A')
+    recorded_at = item.get('recorded_at', 'N/A')
+    temperature = item.get('temperature')
+    humidity = item.get('humidity')
+    bat_v = item.get('bat_v')
+    lat = item.get('lat', 'N/A')
+    lon = item.get('lon', 'N/A')
+
+    temperature_text = f"{temperature} °C" if temperature is not None else "N/A"
+    humidity_text = f"{humidity} %" if humidity is not None else "N/A"
+    battery_text = f"{bat_v} V" if bat_v is not None else "N/A"
+
     return (
-        "<div style='font-size:13px;line-height:1.4;'>"
-        f"<b>{item.get('name')}</b><br>"
-        f"Category: {item.get('category')}<br>"
-        f"Group: {item.get('subgroup')}<br>"
-        f"ID: {item.get('id')}"
+        "<div style='min-width:240px;font-size:13px;line-height:1.5;font-family:Arial,sans-serif;'>"
+        f"<div style='font-size:15px;font-weight:600;margin-bottom:8px;'>{device_name}</div>"
+        f"<div><b>Device ID:</b> {device_id}</div>"
+        f"<div><b>Category:</b> {category}</div>"
+        f"<div><b>Recorded At:</b> {recorded_at}</div>"
+        f"<div><b>Temperature:</b> {temperature_text}</div>"
+        f"<div><b>Humidity:</b> {humidity_text}</div>"
+        f"<div><b>Battery:</b> {battery_text}</div>"
+        f"<div><b>Latitude:</b> {lat}</div>"
+        f"<div><b>Longitude:</b> {lon}</div>"
         "</div>"
     )
 
@@ -44,6 +63,7 @@ def set_custom_icon(map_obj, marker, icon_path: str):
     )
 
     map_obj.run_layer_method(marker.id, "setIcon", js_icon)
+
 
 def add_boundary_polygon(map_obj, name: str, latlngs: List[Tuple[float, float]]):
     """

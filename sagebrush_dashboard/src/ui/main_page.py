@@ -1,10 +1,11 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 from statistics import mean
 
 from nicegui import ui
 
 from src.database.fetch_site_boundary import get_site_boundary_feature
 from src.database.fetch_device_coordinates import get_devices, categorize_devices
+from src.database.fetch_latest_sensor_data import get_latest_sensor_data
 from src.mapping.map_view import create_map, popup_html
 from src.scripts.data_arch import make_time_range, fmt
 
@@ -16,7 +17,14 @@ async def main_page():
     # Load devices from DB
     # ----------------------------
     devices = get_devices()
+    latest_sensor_data = get_latest_sensor_data()
     categorized_layers = categorize_devices(devices)
+
+    # Build a robust map: device_id -> category
+    device_category_map: Dict[str, str] = {}
+    for category, devs in categorized_layers.items():
+        for d in devs:
+            device_category_map[d['device_id']] = category
 
     # Flatten all devices for global marker handling
     items: List[Dict[str, Any]] = []
@@ -39,6 +47,30 @@ async def main_page():
 
     grouped = categorized_layers
 
+    def enrich_device_with_latest_data(device: Dict[str, Any]) -> Dict[str, Any]:
+        enriched = dict(device)
+        latest = latest_sensor_data.get(device['device_id'])
+
+        if latest:
+            enriched['device_name'] = latest.get('device_name')
+            enriched['recorded_at'] = latest.get('recorded_at')
+            enriched['humidity'] = latest.get('humidity')
+            enriched['bat_v'] = latest.get('bat_v')
+            enriched['temperature'] = latest.get('temperature')
+
+            if latest.get('latitude') is not None:
+                enriched['lat'] = latest.get('latitude')
+            if latest.get('longitude') is not None:
+                enriched['lon'] = latest.get('longitude')
+        else:
+            enriched['device_name'] = None
+            enriched['recorded_at'] = None
+            enriched['humidity'] = None
+            enriched['bat_v'] = None
+            enriched['temperature'] = None
+
+        return enriched
+
     # ----------------------------
     # Boundary: fetch from DB
     # ----------------------------
@@ -49,27 +81,55 @@ async def main_page():
         """Return outer ring as [[lat, lon], ...] for Leaflet."""
         if not feature:
             return []
-
         geom = feature.get("geometry") or {}
         gtype = geom.get("type")
-        coords = geom.get("coordinates")
-        if not coords:
+        coords_ = geom.get("coordinates")
+        if not coords_:
             return []
 
-        # Polygon -> coords[0] outer ring
-        # MultiPolygon -> coords[0][0] outer ring of first polygon
         if gtype == "Polygon":
-            ring = coords[0]
+            ring = coords_[0]
         elif gtype == "MultiPolygon":
-            ring = coords[0][0]
+            ring = coords_[0][0]
         else:
             print(f"[boundary] Unsupported geometry type: {gtype}")
             return []
 
-        # GeoJSON ring is [[lon,lat], ...] -> Leaflet expects [[lat,lon], ...]
-        return [[lat, lon] for lon, lat in ring]
+        return [[lat, lon] for lon, lat in ring]  # GeoJSON [lon,lat] -> Leaflet [lat,lon]
 
     boundary_latlngs = extract_outer_ring_latlngs(boundary_feature)
+
+    # ----------------------------
+    # Colored marker icon helper (guaranteed)
+    # ----------------------------
+    def build_colored_div_icon(category: str) -> str:
+        # Temperature Sensors -> orange, scrubmic -> green, SageMic -> yellow
+        if category == "Temperature Sensors":
+            color = "#F97316"  # orange
+        elif category == "scrubmic":
+            color = "#22C55E"  # green
+        elif category == "SageMic":
+            color = "#EAB308"  # yellow
+        else:
+            color = "#94A3B8"  # gray
+
+        html = (
+            "<div style='width:16px;height:16px;"
+            f"background:{color};"
+            "border:2px solid white;"
+            "border-radius:50%;"
+            "box-shadow:0 2px 8px rgba(0,0,0,0.35);"
+            "transform: translate(-50%, -50%);'></div>"
+        )
+
+        return (
+            ":L.divIcon({"
+            "className: '',"
+            f"html: {html!r},"
+            "iconSize: [16,16],"
+            "iconAnchor: [8,8]"
+            "})"
+        )
 
     # ----------------------------
     # Map container
@@ -85,14 +145,20 @@ async def main_page():
             if it['device_id'] in markers or not it.get('lat') or not it.get('lon'):
                 return
 
+            category = device_category_map.get(it['device_id'], 'Other')
+            popup_item = enrich_device_with_latest_data(it)
+            popup_item['category'] = category
+
             mk = m.marker(
-                latlng=(float(it['lat']), float(it['lon'])),
+                latlng=(float(popup_item['lat']), float(popup_item['lon'])),
                 options={'title': it['device_id']},
             )
             markers[it['device_id']] = mk
 
-            if map_ready['value']:
-                m.run_layer_method(mk.id, 'bindPopup', popup_html(it))
+            html = popup_html(popup_item)
+            m.run_layer_method(mk.id, 'bindPopup', html)
+
+            print(f"[popup] bound popup for {it['device_id']}")
 
         def remove_marker(it):
             mk = markers.pop(it['device_id'], None)
@@ -132,11 +198,16 @@ async def main_page():
         layers_panel.set_visibility(False)
 
         with layers_panel:
+
             with ui.row().classes('items-center justify-between mb-3'):
                 ui.label('Layers').classes('text-lg font-semibold')
                 ui.button('Close', on_click=toggle_layers).props('flat')
 
+            # ----------------------------
+            # GROUP + CHILD TOGGLES
+            # ----------------------------
             for category, cat_items in grouped.items():
+
                 group_checkbox = ui.checkbox(category, value=True).classes('font-semibold')
                 child_checkboxes: List[Any] = []
 
@@ -147,6 +218,7 @@ async def main_page():
                                 add_marker(it)
                             else:
                                 remove_marker(it)
+
                         for chk in child_checkboxes:
                             chk.value = e.value
                     return on_group_toggle
@@ -244,9 +316,7 @@ async def main_page():
     # ----------------------------
     # Draw boundary using Leaflet JS (guaranteed)
     # ----------------------------
-    if not boundary_latlngs:
-        print(f"[boundary] No boundary points for {SITE_CODE}")
-    else:
+    if boundary_latlngs:
         js = f"""
         (function() {{
             const el = getElement('{m.id}');
@@ -257,8 +327,6 @@ async def main_page():
             const map = el.map;
 
             const latlngs = {boundary_latlngs};
-
-            // Draw polygon like DBeaver
             const poly = L.polygon(latlngs, {{
                 color: '#0000FF',
                 weight: 3,
@@ -266,13 +334,7 @@ async def main_page():
                 fillOpacity: 0.18
             }}).addTo(map);
 
-            // Fit bounds so you see it immediately
             map.fitBounds(poly.getBounds());
-
-            // Debug marker at first point
-            L.marker(latlngs[0]).addTo(map).bindPopup('BOUNDARY POINT');
-
-            console.log('Boundary polygon added');
         }})();
         """
         ui.run_javascript(js)
