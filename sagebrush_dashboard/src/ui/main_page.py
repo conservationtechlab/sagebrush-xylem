@@ -328,10 +328,10 @@ async def main_page():
 
             const latlngs = {boundary_latlngs};
             const poly = L.polygon(latlngs, {{
-                color: '#0000FF',
+                color: '#0b521d',
                 weight: 3,
                 fill: true,
-                fillOpacity: 0.18
+                fillOpacity: 0.10
             }}).addTo(map);
 
             map.fitBounds(poly.getBounds());
