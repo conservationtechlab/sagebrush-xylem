@@ -13,6 +13,10 @@ from src.scripts.data_arch import make_time_range, fmt
 @ui.page('/')
 async def main_page():
 
+    ui.add_head_html('''
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    ''')
+
     # ----------------------------
     # Load devices from DB
     # ----------------------------
@@ -70,6 +74,114 @@ async def main_page():
             enriched['temperature'] = None
 
         return enriched
+
+    # ----------------------------
+    # Heatmap helpers
+    # ----------------------------
+    def normalize_value(value: float, min_val: float, max_val: float) -> float:
+        if value is None:
+            return 0.0
+        if max_val <= min_val:
+            return 0.5
+        return max(0.0, min(1.0, (value - min_val) / (max_val - min_val)))
+
+    def build_heatmap_points(metric: str) -> List[List[float]]:
+        points: List[List[float]] = []
+        values: List[float] = []
+
+        for it in items:
+            if device_category_map.get(it['device_id']) != "Temperature Sensors":
+                continue
+
+            latest = latest_sensor_data.get(it['device_id'])
+            if not latest:
+                continue
+
+            lat = latest.get('latitude') if latest.get('latitude') is not None else it.get('lat')
+            lon = latest.get('longitude') if latest.get('longitude') is not None else it.get('lon')
+            value = latest.get(metric)
+
+            if lat is None or lon is None or value is None:
+                continue
+
+            values.append(float(value))
+
+        if not values:
+            return []
+
+        min_val = min(values)
+        max_val = max(values)
+
+        for it in items:
+            if device_category_map.get(it['device_id']) != "Temperature Sensors":
+                continue
+
+            latest = latest_sensor_data.get(it['device_id'])
+            if not latest:
+                continue
+
+            lat = latest.get('latitude') if latest.get('latitude') is not None else it.get('lat')
+            lon = latest.get('longitude') if latest.get('longitude') is not None else it.get('lon')
+            value = latest.get(metric)
+
+            if lat is None or lon is None or value is None:
+                continue
+
+            intensity = normalize_value(float(value), min_val, max_val)
+            points.append([float(lat), float(lon), intensity])
+
+        return points
+
+    def add_heatmap_layer(layer_name: str, points: List[List[float]], gradient: Dict[float, str] | None = None):
+        if not points:
+            print(f"[heatmap] no points for {layer_name}")
+            return
+
+        gradient_js = gradient if gradient else {
+            0.2: '#60a5fa',
+            0.4: '#34d399',
+            0.6: '#facc15',
+            0.8: '#fb923c',
+            1.0: '#ef4444',
+        }
+
+        js = f"""
+        (function() {{
+            const el = getElement('{m.id}');
+            if (!el || !el.map || !window.L || !L.heatLayer) {{
+                console.warn('Heatmap plugin or map not ready');
+                return;
+            }}
+            const map = el.map;
+
+            if (window.{layer_name}) {{
+                map.removeLayer(window.{layer_name});
+            }}
+
+            window.{layer_name} = L.heatLayer({points}, {{
+                radius: 35,
+                blur: 28,
+                maxZoom: 17,
+                minOpacity: 0.25,
+                gradient: {gradient_js}
+            }}).addTo(map);
+        }})();
+        """
+        ui.run_javascript(js)
+
+    def remove_heatmap_layer(layer_name: str):
+        js = f"""
+        (function() {{
+            const el = getElement('{m.id}');
+            if (!el || !el.map) return;
+            const map = el.map;
+
+            if (window.{layer_name}) {{
+                map.removeLayer(window.{layer_name});
+            }}
+        }})();
+        """
+        ui.run_javascript(js)
 
     # ----------------------------
     # Boundary: fetch from DB
@@ -240,6 +352,37 @@ async def main_page():
 
                         chk.on_value_change(make_child_toggle(it))
 
+            ui.separator().classes('my-3')
+            ui.label('Heatmaps').classes('text-lg font-semibold')
+
+            temp_heat_toggle = ui.checkbox('Temperature Heatmap', value=False)
+            hum_heat_toggle = ui.checkbox('Humidity Heatmap', value=False)
+
+            def on_temp_heat_toggle(e):
+                if e.value:
+                    add_heatmap_layer('tempHeatLayer', temp_heat_points)
+                else:
+                    remove_heatmap_layer('tempHeatLayer')
+
+            def on_hum_heat_toggle(e):
+                if e.value:
+                    add_heatmap_layer(
+                        'humHeatLayer',
+                        hum_heat_points,
+                        gradient={
+                            0.2: '#e0f2fe',
+                            0.4: '#7dd3fc',
+                            0.6: '#38bdf8',
+                            0.8: '#0ea5e9',
+                            1.0: '#0369a1',
+                        },
+                    )
+                else:
+                    remove_heatmap_layer('humHeatLayer')
+
+            temp_heat_toggle.on_value_change(on_temp_heat_toggle)
+            hum_heat_toggle.on_value_change(on_hum_heat_toggle)
+
         # ----------------------------
         # Bottom bar
         # ----------------------------
@@ -308,6 +451,9 @@ async def main_page():
     # ----------------------------
     await m.initialized()
     map_ready['value'] = True
+
+    temp_heat_points = build_heatmap_points('temperature')
+    hum_heat_points = build_heatmap_points('humidity')
 
     # Add all markers initially
     for it in items:
