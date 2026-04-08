@@ -3,7 +3,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-ROOT = Path("/home/katie/sagemic_detections").resolve()
+ROOT = Path("/path/where/detections/are/stored/locally/").resolve()
 HOST, PORT = "127.0.0.1", 9011
 
 
