@@ -9,13 +9,12 @@ where detections will be transferred to, and create a user that is only within t
 will also move the python socket script to a new folder that sagepush user can access.
 
 ```
-sudo groupadd -g (mount gid) sagebase-writers
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin sagepush
-sudo usermod -aG sagebase-writers sagepush
+sudo groupadd -g <mount gid> sagebase-writers
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin -g sagebase-writers sagepush
 sudo mkdir -p /opt/sagepush
 sudo cp /home/<user>/sagemic/results_over_socket/recv_sagemic_socket.py /opt/sagepush/recv_sagemic_socket.py
-sudo chown sagepush:sagepush /opt/sagepush/recv_sagemic_socket.py
-sudo chmod 644 /opt/sagepush/recv_sagemic_socket.py
+sudo chown sagepush:sagebase-writers /opt/sagepush/recv_sagemic_socket.py
+sudo chmod 640 /opt/sagepush/recv_sagemic_socket.py
 ```
 
 *We mount a NAS to write to in our machine, and mount with the gid=sagebase-writers gid. If you are writing directly to
