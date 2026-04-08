@@ -1,7 +1,7 @@
 import socket, struct, os
 from pathlib import Path
 
-DEST = Path("/mnt/sagebase/sagemic1_ac6").resolve()
+DEST = Path("</path/to/desired/storage/").resolve()
 HOST, PORT = "127.0.0.1", 19001
 
 # protection from a larger file than we expect being pushed
