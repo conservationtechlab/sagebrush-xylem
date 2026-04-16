@@ -1,0 +1,16 @@
+[Unit]
+Description=SageMic file sender (watchdog -> socket)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<user>
+WorkingDirectory=/home/<user>/
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/<user>/sagebase_socket.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

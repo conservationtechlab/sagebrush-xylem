@@ -1,0 +1,20 @@
+[Unit]
+Description=SSH tunnel for SageMic push (local 19001 -> VM 9011)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<internal user>
+Environment=AUTOSSH_GATETIME=0
+ExecStart=/usr/bin/autossh -M 0 -N \
+  -o "ServerAliveInterval=30" \
+  -o "ServerAliveCountMax=3" \
+  -o "ExitOnForwardFailure=yes" \
+  -L 127.0.0.1:<internal port>:127.0.0.1:<port of remote host> \
+  <user on remote host>@<ip of remote host where detections are stored>
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
