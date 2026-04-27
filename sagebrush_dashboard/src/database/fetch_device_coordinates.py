@@ -53,9 +53,9 @@ def get_devices():
     if FILTERS["active_only"]:
         where_clauses.append("end_date IS NULL")
 
-    if FILTERS["exclude_sites"]:
-        excluded = ", ".join([f"'{s.lower()}'" for s in FILTERS["exclude_sites"]])
-        where_clauses.append(f"LOWER(site) NOT IN ({excluded})")
+    # NOTE:
+    # public.deployment does not have a "site" column,
+    # so exclude_sites is skipped for now to avoid crashing.
 
     where_sql = ""
     if where_clauses:
@@ -93,7 +93,6 @@ def categorize_devices(devices):
 
         temp = CATEGORY_RULES["Temperature Sensors"]
 
-        # Temperature Sensors
         if any(did.startswith(p.upper()) for p in temp["prefixes"]):
             layers["Temperature Sensors"].append(d)
             matched = True
@@ -101,17 +100,14 @@ def categorize_devices(devices):
             layers["Temperature Sensors"].append(d)
             matched = True
 
-        # scrubmic
         if not matched and did in {x.upper() for x in CATEGORY_RULES["scrubmic"]["exact_ids"]}:
             layers["scrubmic"].append(d)
             matched = True
 
-        # SageMic exact match
         if not matched and did in {x.upper() for x in CATEGORY_RULES["SageMic"]["exact_ids"]}:
             layers["SageMic"].append(d)
             matched = True
 
-        # DEFAULT EVERYTHING ELSE → SAGEMIC
         if not matched:
             layers["SageMic"].append(d)
 
@@ -129,5 +125,3 @@ if __name__ == "__main__":
         for device in items:
             print(f"  - {device['device_id']}")
         print()
-
-

@@ -6,16 +6,13 @@ from nicegui import ui
 from src.database.fetch_site_boundary import get_site_boundary_feature
 from src.database.fetch_device_coordinates import get_devices, categorize_devices
 from src.database.fetch_latest_sensor_data import get_latest_sensor_data
+from src.database.fetch_sensor_snapshot import get_sensor_snapshot_at
 from src.mapping.map_view import create_map, popup_html
 from src.scripts.data_arch import make_time_range, fmt
-
+from datetime import datetime
 
 @ui.page('/')
 async def main_page():
-
-    ui.add_head_html('''
-    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-    ''')
 
     # ----------------------------
     # Load devices from DB
@@ -23,6 +20,9 @@ async def main_page():
     devices = get_devices()
     latest_sensor_data = get_latest_sensor_data()
     categorized_layers = categorize_devices(devices)
+
+    # current selected snapshot for slider time
+    selected_sensor_data = {'value': latest_sensor_data}
 
     # Build a robust map: device_id -> category
     device_category_map: Dict[str, str] = {}
@@ -35,7 +35,11 @@ async def main_page():
     for layer_devices in categorized_layers.values():
         items.extend(layer_devices)
 
-    coords = [(i['lat'], i['lon']) for i in items if i.get('lat') and i.get('lon')]
+    coords = [
+        (i['lat'], i['lon'])
+        for i in items
+        if i.get('lat') is not None and i.get('lon') is not None
+    ]
     center_lat, center_lon = (
         (mean(a for a, _ in coords), mean(b for _, b in coords))
         if coords else (33.095, -116.995)
@@ -51,21 +55,24 @@ async def main_page():
 
     grouped = categorized_layers
 
-    def enrich_device_with_latest_data(device: Dict[str, Any]) -> Dict[str, Any]:
+    def enrich_device_with_sensor_data(
+        device: Dict[str, Any],
+        sensor_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
         enriched = dict(device)
-        latest = latest_sensor_data.get(device['device_id'])
+        row = sensor_data.get(device['device_id'])
 
-        if latest:
-            enriched['device_name'] = latest.get('device_name')
-            enriched['recorded_at'] = latest.get('recorded_at')
-            enriched['humidity'] = latest.get('humidity')
-            enriched['bat_v'] = latest.get('bat_v')
-            enriched['temperature'] = latest.get('temperature')
+        if row:
+            enriched['device_name'] = row.get('device_name')
+            enriched['recorded_at'] = row.get('recorded_at')
+            enriched['humidity'] = row.get('humidity')
+            enriched['bat_v'] = row.get('bat_v')
+            enriched['temperature'] = row.get('temperature')
 
-            if latest.get('latitude') is not None:
-                enriched['lat'] = latest.get('latitude')
-            if latest.get('longitude') is not None:
-                enriched['lon'] = latest.get('longitude')
+            if row.get('latitude') is not None:
+                enriched['lat'] = row.get('latitude')
+            if row.get('longitude') is not None:
+                enriched['lon'] = row.get('longitude')
         else:
             enriched['device_name'] = None
             enriched['recorded_at'] = None
@@ -75,113 +82,18 @@ async def main_page():
 
         return enriched
 
-    # ----------------------------
-    # Heatmap helpers
-    # ----------------------------
-    def normalize_value(value: float, min_val: float, max_val: float) -> float:
-        if value is None:
-            return 0.0
-        if max_val <= min_val:
-            return 0.5
-        return max(0.0, min(1.0, (value - min_val) / (max_val - min_val)))
-
-    def build_heatmap_points(metric: str) -> List[List[float]]:
-        points: List[List[float]] = []
-        values: List[float] = []
-
-        for it in items:
-            if device_category_map.get(it['device_id']) != "Temperature Sensors":
-                continue
-
-            latest = latest_sensor_data.get(it['device_id'])
-            if not latest:
-                continue
-
-            lat = latest.get('latitude') if latest.get('latitude') is not None else it.get('lat')
-            lon = latest.get('longitude') if latest.get('longitude') is not None else it.get('lon')
-            value = latest.get(metric)
-
-            if lat is None or lon is None or value is None:
-                continue
-
-            values.append(float(value))
-
-        if not values:
-            return []
-
-        min_val = min(values)
-        max_val = max(values)
-
-        for it in items:
-            if device_category_map.get(it['device_id']) != "Temperature Sensors":
-                continue
-
-            latest = latest_sensor_data.get(it['device_id'])
-            if not latest:
-                continue
-
-            lat = latest.get('latitude') if latest.get('latitude') is not None else it.get('lat')
-            lon = latest.get('longitude') if latest.get('longitude') is not None else it.get('lon')
-            value = latest.get(metric)
-
-            if lat is None or lon is None or value is None:
-                continue
-
-            intensity = normalize_value(float(value), min_val, max_val)
-            points.append([float(lat), float(lon), intensity])
-
-        return points
-
-    def add_heatmap_layer(layer_name: str, points: List[List[float]], gradient: Dict[float, str] | None = None):
-        if not points:
-            print(f"[heatmap] no points for {layer_name}")
-            return
-
-        gradient_js = gradient if gradient else {
-            0.2: '#60a5fa',
-            0.4: '#34d399',
-            0.6: '#facc15',
-            0.8: '#fb923c',
-            1.0: '#ef4444',
-        }
-
-        js = f"""
-        (function() {{
-            const el = getElement('{m.id}');
-            if (!el || !el.map || !window.L || !L.heatLayer) {{
-                console.warn('Heatmap plugin or map not ready');
-                return;
-            }}
-            const map = el.map;
-
-            if (window.{layer_name}) {{
-                map.removeLayer(window.{layer_name});
-            }}
-
-            window.{layer_name} = L.heatLayer({points}, {{
-                radius: 35,
-                blur: 28,
-                maxZoom: 17,
-                minOpacity: 0.25,
-                gradient: {gradient_js}
-            }}).addTo(map);
-        }})();
-        """
-        ui.run_javascript(js)
-
-    def remove_heatmap_layer(layer_name: str):
-        js = f"""
-        (function() {{
-            const el = getElement('{m.id}');
-            if (!el || !el.map) return;
-            const map = el.map;
-
-            if (window.{layer_name}) {{
-                map.removeLayer(window.{layer_name});
-            }}
-        }})();
-        """
-        ui.run_javascript(js)
+    def load_sensor_snapshot_for_time(ts):
+        print(f"[slider] requested timestamp: {ts}")
+        try:
+            snapshot = get_sensor_snapshot_at(ts)
+            print(f"[slider] loaded snapshot rows: {len(snapshot)}")
+            sample = next(iter(snapshot.values()), None)
+            if sample:
+                print(f"[slider] sample recorded_at: {sample.get('recorded_at')}")
+            return snapshot
+        except Exception as e:
+            print(f"[snapshot] failed to load snapshot for {ts}: {e}")
+            return latest_sensor_data
 
     # ----------------------------
     # Boundary: fetch from DB
@@ -207,23 +119,22 @@ async def main_page():
             print(f"[boundary] Unsupported geometry type: {gtype}")
             return []
 
-        return [[lat, lon] for lon, lat in ring]  # GeoJSON [lon,lat] -> Leaflet [lat,lon]
+        return [[lat, lon] for lon, lat in ring]
 
     boundary_latlngs = extract_outer_ring_latlngs(boundary_feature)
 
     # ----------------------------
-    # Colored marker icon helper (guaranteed)
+    # Colored marker icon helper
     # ----------------------------
     def build_colored_div_icon(category: str) -> str:
-        # Temperature Sensors -> orange, scrubmic -> green, SageMic -> yellow
         if category == "Temperature Sensors":
-            color = "#F97316"  # orange
+            color = "#F97316"
         elif category == "scrubmic":
-            color = "#22C55E"  # green
+            color = "#22C55E"
         elif category == "SageMic":
-            color = "#EAB308"  # yellow
+            color = "#EAB308"
         else:
-            color = "#94A3B8"  # gray
+            color = "#94A3B8"
 
         html = (
             "<div style='width:16px;height:16px;"
@@ -254,11 +165,11 @@ async def main_page():
         # Marker helpers
         # ----------------------------
         def add_marker(it):
-            if it['device_id'] in markers or not it.get('lat') or not it.get('lon'):
+            if it['device_id'] in markers or it.get('lat') is None or it.get('lon') is None:
                 return
 
             category = device_category_map.get(it['device_id'], 'Other')
-            popup_item = enrich_device_with_latest_data(it)
+            popup_item = enrich_device_with_sensor_data(it, selected_sensor_data['value'])
             popup_item['category'] = category
 
             mk = m.marker(
@@ -276,6 +187,22 @@ async def main_page():
             mk = markers.pop(it['device_id'], None)
             if mk:
                 m.remove_layer(mk)
+
+        def refresh_marker_popups():
+            print("[popup] refresh_marker_popups called")
+            for it in items:
+                mk = markers.get(it['device_id'])
+                if not mk:
+                    continue
+
+                category = device_category_map.get(it['device_id'], 'Other')
+                popup_item = enrich_device_with_sensor_data(it, selected_sensor_data['value'])
+                popup_item['category'] = category
+
+                html = popup_html(popup_item)
+                m.run_layer_method(mk.id, 'bindPopup', html)
+
+            print(f"[popup] refreshed {len(markers)} marker popups")
 
         # ----------------------------
         # Layers panel state
@@ -352,37 +279,6 @@ async def main_page():
 
                         chk.on_value_change(make_child_toggle(it))
 
-            ui.separator().classes('my-3')
-            ui.label('Heatmaps').classes('text-lg font-semibold')
-
-            temp_heat_toggle = ui.checkbox('Temperature Heatmap', value=False)
-            hum_heat_toggle = ui.checkbox('Humidity Heatmap', value=False)
-
-            def on_temp_heat_toggle(e):
-                if e.value:
-                    add_heatmap_layer('tempHeatLayer', temp_heat_points)
-                else:
-                    remove_heatmap_layer('tempHeatLayer')
-
-            def on_hum_heat_toggle(e):
-                if e.value:
-                    add_heatmap_layer(
-                        'humHeatLayer',
-                        hum_heat_points,
-                        gradient={
-                            0.2: '#e0f2fe',
-                            0.4: '#7dd3fc',
-                            0.6: '#38bdf8',
-                            0.8: '#0ea5e9',
-                            1.0: '#0369a1',
-                        },
-                    )
-                else:
-                    remove_heatmap_layer('humHeatLayer')
-
-            temp_heat_toggle.on_value_change(on_temp_heat_toggle)
-            hum_heat_toggle.on_value_change(on_hum_heat_toggle)
-
         # ----------------------------
         # Bottom bar
         # ----------------------------
@@ -400,10 +296,16 @@ async def main_page():
                     timeline.value = idx['value']
                     time_label.text = fmt(times[idx['value']])
 
+                    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    refresh_marker_popups()
+
                 def forward():
                     idx['value'] = min(len(times) - 1, idx['value'] + 1)
                     timeline.value = idx['value']
                     time_label.text = fmt(times[idx['value']])
+
+                    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    refresh_marker_popups()
 
                 async def play_loop():
                     while playing['value']:
@@ -411,13 +313,17 @@ async def main_page():
                             idx['value'] += 1
                             timeline.value = idx['value']
                             time_label.text = fmt(times[idx['value']])
+
+                            selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                            refresh_marker_popups()
+
                         await ui.sleep(0.5)
 
                 def toggle_play():
                     playing['value'] = not playing['value']
                     play_btn.text = '⏸' if playing['value'] else '▶'
                     if playing['value']:
-                        ui.run_task(play_loop())
+                        ui.timer(0.0, play_loop, once=True)
 
                 ui.button('⏮', on_click=rewind).classes('text-white')
                 play_btn = ui.button('▶', on_click=toggle_play).classes('text-white')
@@ -425,9 +331,12 @@ async def main_page():
 
                 time_label = ui.label(fmt(times[idx['value']])).classes('text-xs text-slate-200 w-48 text-center')
 
-                def on_timeline_change(v):
-                    idx['value'] = int(v)
+                def on_timeline_change(e):
+                    idx['value'] = int(e.value)
                     time_label.text = fmt(times[idx['value']])
+
+                    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    refresh_marker_popups()
 
                 timeline = ui.slider(
                     min=0,
@@ -452,15 +361,14 @@ async def main_page():
     await m.initialized()
     map_ready['value'] = True
 
-    temp_heat_points = build_heatmap_points('temperature')
-    hum_heat_points = build_heatmap_points('humidity')
+    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
 
     # Add all markers initially
     for it in items:
         add_marker(it)
 
     # ----------------------------
-    # Draw boundary using Leaflet JS (guaranteed)
+    # Draw boundary using Leaflet JS
     # ----------------------------
     if boundary_latlngs:
         js = f"""
