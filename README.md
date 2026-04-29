@@ -1,5 +1,11 @@
 # sagebrush_software
-Code associated with the SageBRUSH project
+Code associated with the SageBRUSH project.
+
+There is an associated [sagebrush_hardware](https://github.com/conservationtechlab/sagebrush_hardware)
+repository that contains relevant build information for SageBRUSH stations
+that collect various data. This repo contains
+SageBase set-up and schema information, as well as the processes
+we use to parse and transfer those data streams into SageBase. 
 
 ## SageBase 
 
