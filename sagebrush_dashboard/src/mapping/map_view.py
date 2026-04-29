@@ -194,7 +194,17 @@ def popup_html(item: Dict[str, Any]) -> str:
                 gap: 4px;
             ">
                 <span style="font-weight: 600;">File</span>
-                <span style="word-break: break-word; color: #334155;">{filepath}</span>
+                <span style="
+                    display: block;
+                    max-height: 40px;
+                    overflow-y: auto;
+                    font-size: 11px;
+                    line-height: 1.3;
+                    color: #334155;
+                    word-break: break-all;
+            ">
+                    {filepath}
+            </span>
             </div>
             """
 

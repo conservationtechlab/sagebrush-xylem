@@ -49,6 +49,55 @@ async def main_page():
 
     ui.query('body').classes('bg-slate-900 m-0')
 
+    ui.add_head_html('''
+    <style>
+    .mode-select {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    }
+
+    .mode-select .q-field__control {
+        background: transparent !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 0 12px !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .mode-select .q-field__native,
+    .mode-select .q-field__input,
+    .mode-select .q-field__marginal,
+    .mode-select .q-icon,
+    .mode-select .q-field__suffix,
+    .mode-select .q-field__prepend,
+    .mode-select .q-field__append,
+    .mode-select .q-select__dropdown-icon {
+        color: #ffffff !important;
+    }
+
+    .mode-select .q-field__native span,
+    .mode-select .q-field__input span {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    .mode-select .q-field__control-container {
+        padding-top: 0 !important;
+    }
+
+    .mode-select .q-field__label {
+        color: #ffffff !important;
+    }
+
+    .mode-select-menu .q-item {
+        color: #0f172a !important;
+    }
+    </style>
+    ''')
+
     times = make_time_range()
     idx = {'value': len(times) - 1}
 
@@ -65,25 +114,56 @@ async def main_page():
         enriched = dict(device)
 
         sensor_row = sensor_data.get(device['device_id'])
+        latest_row = latest_sensor_data.get(device['device_id'])
         acoustic_row = acoustic_data.get(device['device_id'])
 
-        if sensor_row:
-            enriched['device_name'] = sensor_row.get('device_name')
-            enriched['recorded_at'] = sensor_row.get('recorded_at')
-            enriched['humidity'] = sensor_row.get('humidity')
-            enriched['bat_v'] = sensor_row.get('bat_v')
-            enriched['temperature'] = sensor_row.get('temperature')
+        base_row = sensor_row or {}
+        fallback_row = latest_row or {}
 
-            if sensor_row.get('latitude') is not None:
-                enriched['lat'] = sensor_row.get('latitude')
-            if sensor_row.get('longitude') is not None:
-                enriched['lon'] = sensor_row.get('longitude')
-        else:
-            enriched['device_name'] = None
-            enriched['recorded_at'] = None
-            enriched['humidity'] = None
-            enriched['bat_v'] = None
-            enriched['temperature'] = None
+        enriched['device_name'] = (
+            base_row.get('device_name')
+            or fallback_row.get('device_name')
+            or device.get('device_id')
+        )
+
+        enriched['recorded_at'] = (
+            base_row.get('recorded_at')
+            or fallback_row.get('recorded_at')
+        )
+
+        enriched['humidity'] = (
+            base_row.get('humidity')
+            if base_row.get('humidity') is not None
+            else fallback_row.get('humidity')
+        )
+
+        enriched['bat_v'] = (
+            base_row.get('bat_v')
+            if base_row.get('bat_v') is not None
+            else fallback_row.get('bat_v')
+        )
+
+        enriched['temperature'] = (
+            base_row.get('temperature')
+            if base_row.get('temperature') is not None
+            else fallback_row.get('temperature')
+        )
+
+        enriched['lat'] = (
+            base_row.get('latitude')
+            if base_row.get('latitude') is not None
+            else fallback_row.get('latitude')
+            if fallback_row.get('latitude') is not None
+            else device.get('lat')
+        )
+
+        enriched['lon'] = (
+            base_row.get('longitude')
+            if base_row.get('longitude') is not None
+            else fallback_row.get('longitude')
+            if fallback_row.get('longitude') is not None
+            else device.get('lon')
+        )
 
         if acoustic_row:
             enriched['acoustic_recorded_at'] = acoustic_row.get('recorded_at')
@@ -118,7 +198,10 @@ async def main_page():
             print(f"[acoustics] loaded acoustic snapshot rows: {len(snapshot)}")
             sample = next(iter(snapshot.values()), None)
             if sample:
-                print(f"[acoustics] sample recorded_at: {sample.get('recorded_at')}, species: {sample.get('species')}")
+                print(
+                    f"[acoustics] sample recorded_at: {sample.get('recorded_at')}, "
+                    f"species: {sample.get('species')}"
+                )
             return snapshot
         except Exception as e:
             print(f"[acoustics] failed to load acoustic snapshot for {ts}: {e}")
@@ -223,6 +306,7 @@ async def main_page():
 
         def refresh_marker_popups():
             print("[popup] refresh_marker_popups called")
+
             for it in items:
                 mk = markers.get(it['device_id'])
                 if not mk:
@@ -274,7 +358,6 @@ async def main_page():
         layers_panel.set_visibility(False)
 
         with layers_panel:
-
             with ui.row().classes('items-center justify-between mb-3'):
                 ui.label('Layers').classes('text-lg font-semibold')
                 ui.button('Close', on_click=toggle_layers).props('flat')
@@ -369,7 +452,9 @@ async def main_page():
                 play_btn = ui.button('▶', on_click=toggle_play).classes('text-white')
                 ui.button('⏭', on_click=forward).classes('text-white')
 
-                time_label = ui.label(fmt(times[idx['value']])).classes('text-xs text-slate-200 w-48 text-center')
+                time_label = ui.label(fmt(times[idx['value']])).classes(
+                    'text-xs text-slate-200 w-48 text-center'
+                )
 
                 def on_timeline_change(e):
                     idx['value'] = int(e.value)
@@ -387,14 +472,17 @@ async def main_page():
                     on_change=on_timeline_change,
                 ).classes('flex-1')
 
-                ui.select(
+                mode_select = ui.select(
                     options=['Live', 'Playback', 'Archive'],
                     value='Live',
-                ).props('dark').classes(
-                    'text-white font-semibold '
-                    'bg-slate-900 rounded-md px-3 py-2 text-sm h-8 '
-                    'flex items-center shadow-sm'
+                ).props('borderless dense popup-content-class=mode-select-menu').classes(
+                    'mode-select rounded-2xl min-w-[130px] h-10 px-3'
                 )
+
+                mode_select.style('''
+                    background: linear-gradient(to right, #1e293b, #0f172a);
+                    color: white;
+                ''')
 
     # ----------------------------
     # Finalize map
@@ -402,6 +490,7 @@ async def main_page():
     await m.initialized()
     map_ready['value'] = True
 
+    # initialize both snapshots to current slider time
     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
 
