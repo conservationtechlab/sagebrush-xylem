@@ -20,6 +20,12 @@ def popup_html(item: Dict[str, Any]) -> str:
     humidity = item.get('humidity')
     bat_v = item.get('bat_v')
 
+    # acoustic fields
+    acoustic_recorded_at = item.get('acoustic_recorded_at')
+    species = item.get('species')
+    confidence = item.get('confidence')
+    filepath = item.get('filepath')
+
     # =========================
     # TEMPERATURE SENSORS
     # =========================
@@ -168,14 +174,33 @@ def popup_html(item: Dict[str, Any]) -> str:
         """
 
     # =========================
-    # SAGEMIC
+    # SAGEMIC / ACOUSTIC SENSOR
     # =========================
     if category == "SageMic":
         battery_val = f"{round(bat_v, 2)} V" if bat_v is not None else "--"
+        confidence_val = f"{round(confidence, 2)}" if confidence is not None else "--"
+        acoustic_time_val = acoustic_recorded_at or "--"
+        species_val = species or "--"
+
+        filepath_block = ""
+        if filepath:
+            filepath_block = f"""
+            <div style="
+                display: flex;
+                flex-direction: column;
+                background: #f8fafc;
+                border-radius: 10px;
+                padding: 8px 10px;
+                gap: 4px;
+            ">
+                <span style="font-weight: 600;">File</span>
+                <span style="word-break: break-word; color: #334155;">{filepath}</span>
+            </div>
+            """
 
         return f"""
         <div style="
-            min-width:260px;
+            min-width:280px;
             font-family: Inter, system-ui, -apple-system, sans-serif;
             background: #ffffff;
             border-radius: 16px;
@@ -210,37 +235,62 @@ def popup_html(item: Dict[str, Any]) -> str:
             <div style="padding: 14px;">
                 <div style="
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                    gap: 10px;
                     margin-bottom: 12px;
-                    background: #f0fdf4;
-                    border: 1px solid #bbf7d0;
-                    border-radius: 14px;
-                    padding: 12px;
                 ">
-                    <div style="display:flex; align-items:center; gap:8px;">
+                    <div style="
+                        flex: 1;
+                        background: #f0fdf4;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 14px;
+                        padding: 12px;
+                        text-align: center;
+                    ">
                         <div style="
-                            width: 10px;
-                            height: 10px;
-                            border-radius: 999px;
-                            background: #22c55e;
-                            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
-                        "></div>
+                            font-size: 16px;
+                            font-weight: 800;
+                            color: #166534;
+                            line-height: 1.15;
+                            word-break: break-word;
+                        ">
+                            {species_val}
+                        </div>
                         <div style="
-                            font-size: 14px;
+                            margin-top: 6px;
+                            font-size: 11px;
                             font-weight: 700;
+                            letter-spacing: 0.08em;
                             color: #166534;
                         ">
-                            Active
+                            SPECIES
                         </div>
                     </div>
 
                     <div style="
-                        font-size: 12px;
-                        color: #166534;
-                        font-weight: 600;
+                        width: 110px;
+                        background: #ecfeff;
+                        border: 1px solid #a5f3fc;
+                        border-radius: 14px;
+                        padding: 12px;
+                        text-align: center;
                     ">
-                        Listening
+                        <div style="
+                            font-size: 24px;
+                            font-weight: 800;
+                            color: #155e75;
+                            line-height: 1;
+                        ">
+                            {confidence_val}
+                        </div>
+                        <div style="
+                            margin-top: 6px;
+                            font-size: 11px;
+                            font-weight: 700;
+                            letter-spacing: 0.08em;
+                            color: #155e75;
+                        ">
+                            CONFIDENCE
+                        </div>
                     </div>
                 </div>
 
@@ -257,8 +307,19 @@ def popup_html(item: Dict[str, Any]) -> str:
                         border-radius: 10px;
                         padding: 8px 10px;
                     ">
-                        <span style="font-weight: 600;">Updated</span>
+                        <span style="font-weight: 600;">Sensor Updated</span>
                         <span>{recorded_at}</span>
+                    </div>
+
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        background: #f8fafc;
+                        border-radius: 10px;
+                        padding: 8px 10px;
+                    ">
+                        <span style="font-weight: 600;">Acoustic Time</span>
+                        <span>{acoustic_time_val}</span>
                     </div>
 
                     <div style="
@@ -283,6 +344,8 @@ def popup_html(item: Dict[str, Any]) -> str:
                         <span style="font-weight: 600;">ID</span>
                         <span style="text-align: right; word-break: break-word;">{device_id}</span>
                     </div>
+
+                    {filepath_block}
                 </div>
             </div>
         </div>
@@ -385,7 +448,7 @@ def add_boundary_polygon(map_obj, name: str, latlngs: List[Tuple[float, float]])
     latlngs_js = [[lat, lon] for lat, lon in latlngs]
 
     options = {
-        "color": "#FF00FF",      # bright magenta so you can't miss it
+        "color": "#FF00FF",
         "weight": 6,
         "fill": True,
         "fillOpacity": 0.18,

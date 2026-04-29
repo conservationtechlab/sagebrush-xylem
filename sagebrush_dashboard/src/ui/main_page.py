@@ -7,9 +7,10 @@ from src.database.fetch_site_boundary import get_site_boundary_feature
 from src.database.fetch_device_coordinates import get_devices, categorize_devices
 from src.database.fetch_latest_sensor_data import get_latest_sensor_data
 from src.database.fetch_sensor_snapshot import get_sensor_snapshot_at
+from src.database.fetch_acoustic_snapshot import get_acoustic_snapshot_at
 from src.mapping.map_view import create_map, popup_html
 from src.scripts.data_arch import make_time_range, fmt
-from datetime import datetime
+
 
 @ui.page('/')
 async def main_page():
@@ -21,8 +22,9 @@ async def main_page():
     latest_sensor_data = get_latest_sensor_data()
     categorized_layers = categorize_devices(devices)
 
-    # current selected snapshot for slider time
+    # current selected snapshots for slider time
     selected_sensor_data = {'value': latest_sensor_data}
+    selected_acoustic_data = {'value': {}}
 
     # Build a robust map: device_id -> category
     device_category_map: Dict[str, str] = {}
@@ -58,21 +60,24 @@ async def main_page():
     def enrich_device_with_sensor_data(
         device: Dict[str, Any],
         sensor_data: Dict[str, Any],
+        acoustic_data: Dict[str, Any],
     ) -> Dict[str, Any]:
         enriched = dict(device)
-        row = sensor_data.get(device['device_id'])
 
-        if row:
-            enriched['device_name'] = row.get('device_name')
-            enriched['recorded_at'] = row.get('recorded_at')
-            enriched['humidity'] = row.get('humidity')
-            enriched['bat_v'] = row.get('bat_v')
-            enriched['temperature'] = row.get('temperature')
+        sensor_row = sensor_data.get(device['device_id'])
+        acoustic_row = acoustic_data.get(device['device_id'])
 
-            if row.get('latitude') is not None:
-                enriched['lat'] = row.get('latitude')
-            if row.get('longitude') is not None:
-                enriched['lon'] = row.get('longitude')
+        if sensor_row:
+            enriched['device_name'] = sensor_row.get('device_name')
+            enriched['recorded_at'] = sensor_row.get('recorded_at')
+            enriched['humidity'] = sensor_row.get('humidity')
+            enriched['bat_v'] = sensor_row.get('bat_v')
+            enriched['temperature'] = sensor_row.get('temperature')
+
+            if sensor_row.get('latitude') is not None:
+                enriched['lat'] = sensor_row.get('latitude')
+            if sensor_row.get('longitude') is not None:
+                enriched['lon'] = sensor_row.get('longitude')
         else:
             enriched['device_name'] = None
             enriched['recorded_at'] = None
@@ -80,20 +85,44 @@ async def main_page():
             enriched['bat_v'] = None
             enriched['temperature'] = None
 
+        if acoustic_row:
+            enriched['acoustic_recorded_at'] = acoustic_row.get('recorded_at')
+            enriched['species'] = acoustic_row.get('species')
+            enriched['confidence'] = acoustic_row.get('confidence')
+            enriched['filepath'] = acoustic_row.get('filepath')
+        else:
+            enriched['acoustic_recorded_at'] = None
+            enriched['species'] = None
+            enriched['confidence'] = None
+            enriched['filepath'] = None
+
         return enriched
 
     def load_sensor_snapshot_for_time(ts):
         print(f"[slider] requested timestamp: {ts}")
         try:
             snapshot = get_sensor_snapshot_at(ts)
-            print(f"[slider] loaded snapshot rows: {len(snapshot)}")
+            print(f"[slider] loaded sensor snapshot rows: {len(snapshot)}")
             sample = next(iter(snapshot.values()), None)
             if sample:
-                print(f"[slider] sample recorded_at: {sample.get('recorded_at')}")
+                print(f"[slider] sensor sample recorded_at: {sample.get('recorded_at')}")
             return snapshot
         except Exception as e:
-            print(f"[snapshot] failed to load snapshot for {ts}: {e}")
+            print(f"[snapshot] failed to load sensor snapshot for {ts}: {e}")
             return latest_sensor_data
+
+    def load_acoustic_snapshot_for_time(ts):
+        print(f"[acoustics] requested timestamp: {ts}")
+        try:
+            snapshot = get_acoustic_snapshot_at(ts)
+            print(f"[acoustics] loaded acoustic snapshot rows: {len(snapshot)}")
+            sample = next(iter(snapshot.values()), None)
+            if sample:
+                print(f"[acoustics] sample recorded_at: {sample.get('recorded_at')}, species: {sample.get('species')}")
+            return snapshot
+        except Exception as e:
+            print(f"[acoustics] failed to load acoustic snapshot for {ts}: {e}")
+            return {}
 
     # ----------------------------
     # Boundary: fetch from DB
@@ -169,7 +198,11 @@ async def main_page():
                 return
 
             category = device_category_map.get(it['device_id'], 'Other')
-            popup_item = enrich_device_with_sensor_data(it, selected_sensor_data['value'])
+            popup_item = enrich_device_with_sensor_data(
+                it,
+                selected_sensor_data['value'],
+                selected_acoustic_data['value'],
+            )
             popup_item['category'] = category
 
             mk = m.marker(
@@ -196,7 +229,11 @@ async def main_page():
                     continue
 
                 category = device_category_map.get(it['device_id'], 'Other')
-                popup_item = enrich_device_with_sensor_data(it, selected_sensor_data['value'])
+                popup_item = enrich_device_with_sensor_data(
+                    it,
+                    selected_sensor_data['value'],
+                    selected_acoustic_data['value'],
+                )
                 popup_item['category'] = category
 
                 html = popup_html(popup_item)
@@ -297,6 +334,7 @@ async def main_page():
                     time_label.text = fmt(times[idx['value']])
 
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
 
                 def forward():
@@ -305,6 +343,7 @@ async def main_page():
                     time_label.text = fmt(times[idx['value']])
 
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
 
                 async def play_loop():
@@ -315,6 +354,7 @@ async def main_page():
                             time_label.text = fmt(times[idx['value']])
 
                             selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                            selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                             refresh_marker_popups()
 
                         await ui.sleep(0.5)
@@ -336,6 +376,7 @@ async def main_page():
                     time_label.text = fmt(times[idx['value']])
 
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
 
                 timeline = ui.slider(
@@ -362,6 +403,7 @@ async def main_page():
     map_ready['value'] = True
 
     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
 
     # Add all markers initially
     for it in items:
