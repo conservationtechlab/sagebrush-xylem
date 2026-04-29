@@ -19,3 +19,11 @@ and humidity sensor. It contains example docker-compose files for each of the
 applications to host, and how to connect the services to each other if they
 are on different networks.
 
+## Socket Handlers
+
+There are instructions for setting up persistent data transfer between servers that
+manage IoT devices and the server where SageBase might be hosted. The current socket
+example is for checking for newly created sound files on the remote IoT management server,
+and using a secure tunnel to transfer that file in real time. This can be modified to
+transfer other types of data. 
+
