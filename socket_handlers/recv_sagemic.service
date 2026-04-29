@@ -1,0 +1,15 @@
+[Unit]
+Description=SageMic file receiver (socket -> /mnt/sagebase)
+After=network-online.target sagepush-tunnel.service
+Wants=network-online.target sagepush-tunnel.service
+
+[Service]
+Type=simple
+User=sagepush
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /opt/sagepush/recv_sagemic_socket.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
