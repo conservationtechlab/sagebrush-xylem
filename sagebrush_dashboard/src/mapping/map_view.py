@@ -12,6 +12,19 @@ def create_map(center_lat, center_lon):
 
 
 def popup_html(item: Dict[str, Any]) -> str:
+    def pretty_species_name(name: Any) -> str:
+        if not name:
+            return "--"
+        return str(name).replace("_", " ")
+
+    def format_confidence_percent(value: Any) -> str:
+        if value is None:
+            return "--"
+        try:
+            return f"{round(float(value) * 100)}%"
+        except Exception:
+            return "--"
+
     device_id = item.get('device_id', 'N/A')
     device_name = item.get('device_name') or device_id
     category = item.get('category', 'N/A')
@@ -20,15 +33,11 @@ def popup_html(item: Dict[str, Any]) -> str:
     humidity = item.get('humidity')
     bat_v = item.get('bat_v')
 
-    # acoustic fields
     acoustic_recorded_at = item.get('acoustic_recorded_at')
     species = item.get('species')
     confidence = item.get('confidence')
     filepath = item.get('filepath')
 
-    # =========================
-    # TEMPERATURE SENSORS
-    # =========================
     if category == "Temperature Sensors":
         temp_val = f"{round(temperature, 1)}°C" if temperature is not None else "--"
         hum_val = f"{round(humidity, 1)}%" if humidity is not None else "--"
@@ -173,14 +182,11 @@ def popup_html(item: Dict[str, Any]) -> str:
         </div>
         """
 
-    # =========================
-    # SAGEMIC / ACOUSTIC SENSOR
-    # =========================
     if category == "SageMic":
         battery_val = f"{round(bat_v, 2)} V" if bat_v is not None else "--"
-        confidence_val = f"{round(confidence, 2)}" if confidence is not None else "--"
+        confidence_val = format_confidence_percent(confidence)
         acoustic_time_val = acoustic_recorded_at or "--"
-        species_val = species or "--"
+        species_val = pretty_species_name(species)
 
         filepath_block = ""
         if filepath:
@@ -202,9 +208,9 @@ def popup_html(item: Dict[str, Any]) -> str:
                     line-height: 1.3;
                     color: #334155;
                     word-break: break-all;
-            ">
+                ">
                     {filepath}
-            </span>
+                </span>
             </div>
             """
 
@@ -361,9 +367,6 @@ def popup_html(item: Dict[str, Any]) -> str:
         </div>
         """
 
-    # =========================
-    # DEFAULT
-    # =========================
     battery_val = f"{round(bat_v, 2)} V" if bat_v is not None else "N/A"
 
     return f"""
@@ -447,14 +450,6 @@ def set_custom_icon(map_obj, marker, icon_path: str):
 
 
 def add_boundary_polygon(map_obj, name: str, latlngs: List[Tuple[float, float]]):
-    """
-    Add a boundary polygon to the NiceGUI Leaflet map using generic_layer.
-
-    IMPORTANT:
-    This NiceGUI version expects args like:
-      [":L.polygon", latlngs, options]
-    not a single JS expression string.
-    """
     latlngs_js = [[lat, lon] for lat, lon in latlngs]
 
     options = {

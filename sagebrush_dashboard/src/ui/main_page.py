@@ -1,5 +1,6 @@
 from typing import Dict, Any, List
 from statistics import mean
+from collections import Counter
 
 from nicegui import ui
 
@@ -106,6 +107,19 @@ async def main_page():
 
     grouped = categorized_layers
 
+    def pretty_species_name(name: Any) -> str:
+        if not name:
+            return "--"
+        return str(name).replace("_", " ")
+
+    def format_confidence_percent(value: Any) -> str:
+        if value is None:
+            return "--"
+        try:
+            return f"{round(float(value) * 100)}%"
+        except Exception:
+            return "--"
+
     def enrich_device_with_sensor_data(
         device: Dict[str, Any],
         sensor_data: Dict[str, Any],
@@ -207,6 +221,41 @@ async def main_page():
             print(f"[acoustics] failed to load acoustic snapshot for {ts}: {e}")
             return {}
 
+    def build_birdnet_summary(acoustic_data: Dict[str, Any]) -> Dict[str, Any]:
+        species_list = []
+        confidences = []
+        latest_time = None
+
+        for row in acoustic_data.values():
+            species = row.get('species')
+            confidence = row.get('confidence')
+            recorded_at = row.get('recorded_at')
+
+            if species:
+                species_list.append(species)
+
+            if confidence is not None:
+                confidences.append(confidence)
+
+            if recorded_at and (latest_time is None or recorded_at > latest_time):
+                latest_time = recorded_at
+
+        species_counts = Counter(species_list)
+        top_species = [
+            (pretty_species_name(species), count)
+            for species, count in species_counts.most_common(3)
+        ]
+
+        avg_confidence = round((sum(confidences) / len(confidences)) * 100) if confidences else None
+
+        return {
+            'total_detections': len(species_list),
+            'unique_species': len(species_counts),
+            'top_species': top_species,
+            'avg_confidence': avg_confidence,
+            'latest_time': latest_time,
+        }
+
     # ----------------------------
     # Boundary: fetch from DB
     # ----------------------------
@@ -273,6 +322,34 @@ async def main_page():
 
         m = create_map(center_lat, center_lon)
 
+        birdnet_summary = {'value': build_birdnet_summary(selected_acoustic_data['value'])}
+
+        summary_card = ui.card().classes(
+            'fixed left-4 top-4 z-[9998] w-80 '
+            'bg-white/95 backdrop-blur shadow-xl rounded-xl p-4'
+        )
+
+        with summary_card:
+            ui.label('BirdNET Summary').classes('text-lg font-bold text-slate-800')
+            summary_time = ui.label('Latest acoustic time: --').classes('text-xs text-slate-500')
+
+            with ui.grid(columns=2).classes('w-full gap-3 mt-3'):
+                with ui.card().classes('bg-green-50 rounded-lg p-3 shadow-none'):
+                    total_label = ui.label('0').classes('text-2xl font-bold text-green-700')
+                    ui.label('Detections').classes('text-sm text-slate-600')
+
+                with ui.card().classes('bg-cyan-50 rounded-lg p-3 shadow-none'):
+                    unique_label = ui.label('0').classes('text-2xl font-bold text-cyan-700')
+                    ui.label('Unique species').classes('text-sm text-slate-600')
+
+                with ui.card().classes('bg-amber-50 rounded-lg p-3 shadow-none col-span-2'):
+                    avg_conf_label = ui.label('--').classes('text-2xl font-bold text-amber-700')
+                    ui.label('Avg confidence').classes('text-sm text-slate-600')
+
+            ui.separator().classes('my-3')
+            ui.label('Top species').classes('text-sm font-semibold text-slate-700')
+            top_species_column = ui.column().classes('w-full gap-2 mt-2')
+
         # ----------------------------
         # Marker helpers
         # ----------------------------
@@ -324,6 +401,30 @@ async def main_page():
                 m.run_layer_method(mk.id, 'bindPopup', html)
 
             print(f"[popup] refreshed {len(markers)} marker popups")
+
+        def refresh_birdnet_summary():
+            birdnet_summary['value'] = build_birdnet_summary(selected_acoustic_data['value'])
+            summary = birdnet_summary['value']
+
+            total_label.text = str(summary['total_detections'])
+            unique_label.text = str(summary['unique_species'])
+            avg_conf_label.text = (
+                f"{summary['avg_confidence']}%" if summary['avg_confidence'] is not None else '--'
+            )
+            summary_time.text = f"Latest acoustic time: {summary['latest_time'] or '--'}"
+
+            top_species_column.clear()
+
+            with top_species_column:
+                if summary['top_species']:
+                    for species, count in summary['top_species']:
+                        with ui.row().classes(
+                            'w-full items-center justify-between bg-slate-50 rounded-lg px-3 py-2'
+                        ):
+                            ui.label(species).classes('text-sm text-slate-700')
+                            ui.label(str(count)).classes('text-sm font-semibold text-slate-500')
+                else:
+                    ui.label('No acoustic detections').classes('text-sm text-slate-400')
 
         # ----------------------------
         # Layers panel state
@@ -419,6 +520,7 @@ async def main_page():
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
                     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
+                    refresh_birdnet_summary()
 
                 def forward():
                     idx['value'] = min(len(times) - 1, idx['value'] + 1)
@@ -428,6 +530,7 @@ async def main_page():
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
                     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
+                    refresh_birdnet_summary()
 
                 async def play_loop():
                     while playing['value']:
@@ -439,6 +542,7 @@ async def main_page():
                             selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
                             selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                             refresh_marker_popups()
+                            refresh_birdnet_summary()
 
                         await ui.sleep(0.5)
 
@@ -463,6 +567,7 @@ async def main_page():
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
                     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
                     refresh_marker_popups()
+                    refresh_birdnet_summary()
 
                 timeline = ui.slider(
                     min=0,
@@ -497,6 +602,8 @@ async def main_page():
     # Add all markers initially
     for it in items:
         add_marker(it)
+
+    refresh_birdnet_summary()
 
     # ----------------------------
     # Draw boundary using Leaflet JS
