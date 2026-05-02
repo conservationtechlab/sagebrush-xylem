@@ -1,3 +1,4 @@
+import requests
 from typing import Dict, Any, List
 from statistics import mean
 from collections import Counter
@@ -104,7 +105,6 @@ async def main_page():
 
     markers: Dict[str, Any] = {}
     map_ready = {'value': False}
-
     grouped = categorized_layers
 
     def pretty_species_name(name: Any) -> str:
@@ -119,6 +119,25 @@ async def main_page():
             return f"{round(float(value) * 100)}%"
         except Exception:
             return "--"
+
+    def get_bird_image_url(species_name: str) -> str:
+        if not species_name:
+            return "https://upload.wikimedia.org/wikipedia/commons/6/6b/Blackbird_2.jpg"
+
+        clean_name = species_name.replace("_", " ").lower()
+
+        # Known mappings (you can expand this gradually)
+        bird_images = {
+            "common raven": "https://cdn.download.ams.birds.cornell.edu/api/v1/asset/203485001/900",
+            "american crow": "https://cdn.download.ams.birds.cornell.edu/api/v1/asset/202984001/900",
+            "house finch": "https://cdn.download.ams.birds.cornell.edu/api/v1/asset/307954711/900",
+        }
+
+        return bird_images.get(
+            clean_name,
+            "https://upload.wikimedia.org/wikipedia/commons/6/6b/Blackbird_2.jpg"
+        )
+        
 
     def enrich_device_with_sensor_data(
         device: Dict[str, Any],
@@ -263,7 +282,6 @@ async def main_page():
     boundary_feature = get_site_boundary_feature(SITE_CODE)
 
     def extract_outer_ring_latlngs(feature: Dict[str, Any]) -> List[List[float]]:
-        """Return outer ring as [[lat, lon], ...] for Leaflet."""
         if not feature:
             return []
         geom = feature.get("geometry") or {}
@@ -284,9 +302,6 @@ async def main_page():
 
     boundary_latlngs = extract_outer_ring_latlngs(boundary_feature)
 
-    # ----------------------------
-    # Colored marker icon helper
-    # ----------------------------
     def build_colored_div_icon(category: str) -> str:
         if category == "Temperature Sensors":
             color = "#F97316"
@@ -324,6 +339,38 @@ async def main_page():
 
         birdnet_summary = {'value': build_birdnet_summary(selected_acoustic_data['value'])}
 
+        # ----------------------------
+        # Bird dialog
+        # ----------------------------
+        bird_dialog = ui.dialog()
+        with bird_dialog:
+            with ui.card().classes('w-[420px] max-w-[90vw] p-4'):
+                bird_title = ui.label('').classes('text-xl font-bold text-slate-800')
+                bird_img = ui.image('https://placehold.co/400x300?text=Bird').classes(
+                    'w-full h-64 object-cover rounded-lg mt-3'
+                )
+                bird_link = ui.link('View on Wikipedia', '#', new_tab=True).classes(
+                    'text-blue-600 text-sm mt-3'
+                )
+                ui.button('Close', on_click=bird_dialog.close).classes('mt-4')
+
+        def open_bird_popup(species_name: str):
+            if not species_name:
+                return
+
+            clean_name = pretty_species_name(species_name)
+            wiki_name = clean_name.replace(" ", "_")
+            wiki_url = f"https://en.wikipedia.org/wiki/{wiki_name}"
+
+            bird_title.text = clean_name
+            bird_img.set_source(get_bird_image_url(clean_name))
+            bird_link.text = f"View {clean_name} on Wikipedia"
+            bird_link._props['href'] = wiki_url
+            bird_dialog.open()
+
+        # ----------------------------
+        # BirdNET summary card
+        # ----------------------------
         summary_card = ui.card().classes(
             'fixed left-4 top-4 z-[9998] w-80 '
             'bg-white/95 backdrop-blur shadow-xl rounded-xl p-4'
@@ -421,7 +468,10 @@ async def main_page():
                         with ui.row().classes(
                             'w-full items-center justify-between bg-slate-50 rounded-lg px-3 py-2'
                         ):
-                            ui.label(species).classes('text-sm text-slate-700')
+                            ui.button(
+                                species,
+                                on_click=lambda s=species: open_bird_popup(s),
+                            ).props('flat dense').classes('text-sm text-blue-600 normal-case')
                             ui.label(str(count)).classes('text-sm font-semibold text-slate-500')
                 else:
                     ui.label('No acoustic detections').classes('text-sm text-slate-400')
@@ -436,9 +486,6 @@ async def main_page():
             layers_panel.set_visibility(panel_open['value'])
             layers_button.set_visibility(not panel_open['value'])
 
-        # ----------------------------
-        # LAYERS BUTTON
-        # ----------------------------
         layers_button = ui.button(
             icon='layers',
             on_click=toggle_layers,
@@ -448,9 +495,6 @@ async def main_page():
             'rounded-md shadow px-2 py-2'
         ).tooltip('Open layer list')
 
-        # ----------------------------
-        # LAYERS PANEL
-        # ----------------------------
         layers_panel = ui.card().classes(
             'fixed right-4 top-16 z-[9998] w-80 '
             'bg-white shadow-xl rounded-lg p-3 '
@@ -463,9 +507,6 @@ async def main_page():
                 ui.label('Layers').classes('text-lg font-semibold')
                 ui.button('Close', on_click=toggle_layers).props('flat')
 
-            # ----------------------------
-            # GROUP + CHILD TOGGLES
-            # ----------------------------
             for category, cat_items in grouped.items():
 
                 group_checkbox = ui.checkbox(category, value=True).classes('font-semibold')
@@ -595,11 +636,9 @@ async def main_page():
     await m.initialized()
     map_ready['value'] = True
 
-    # initialize both snapshots to current slider time
     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
 
-    # Add all markers initially
     for it in items:
         add_marker(it)
 
