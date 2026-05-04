@@ -470,6 +470,44 @@ async def main_page():
 
             print(f"[popup] refreshed {len(markers)} marker popups")
 
+
+        def show_bird_detection_popups():
+            acoustic_data = selected_acoustic_data['value']
+
+            for device_id, row in acoustic_data.items():
+                if not row.get('species'):
+                    continue
+
+                mk = markers.get(device_id)
+                if not mk:
+                    continue
+
+                device = next(
+                    (it for it in items if it['device_id'] == device_id),
+                    None
+                )
+
+                if not device:
+                    continue
+
+                category = device_category_map.get(device_id, 'Other')
+
+                popup_item = enrich_device_with_sensor_data(
+                    device,
+                    selected_sensor_data['value'],
+                    selected_acoustic_data['value'],
+                )
+                popup_item['category'] = category
+
+                html = popup_html(popup_item)
+
+                # Re-bind the normal styled popup first
+                m.run_layer_method(mk.id, 'bindPopup', html)
+
+                # Then open it
+                m.run_layer_method(mk.id, 'openPopup')    
+
+
         def refresh_birdnet_summary():
             birdnet_summary['value'] = build_birdnet_summary(selected_acoustic_data['value'])
             summary = birdnet_summary['value']
@@ -597,7 +635,10 @@ async def main_page():
                 async def play_loop():
                     while playing['value'] and idx['value'] < len(times) - 1:
                         jump_to(idx['value'] + 1)
-                        await asyncio.sleep(0.5)
+
+                        show_bird_detection_popups()
+
+                        await asyncio.sleep(0.8)
 
                     playing['value'] = False
                     play_btn.text = '▶'
