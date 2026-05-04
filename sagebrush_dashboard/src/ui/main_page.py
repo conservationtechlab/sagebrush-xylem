@@ -1,4 +1,5 @@
 import requests
+import asyncio
 from typing import Dict, Any, List
 from statistics import mean
 from collections import Counter
@@ -333,7 +334,20 @@ async def main_page():
     # ----------------------------
     # Map container
     # ----------------------------
-    with ui.element('div').classes('relative w-full h-screen'):
+    with ui.element('div').classes(
+        'fixed top-0 left-0 right-0 z-[9999] '
+        'bg-slate-900/90 backdrop-blur border-b border-slate-700 '
+        'px-6 py-3 flex items-center justify-between'
+    ):
+        ui.label('SageBrush Dashboard 🌿').classes(
+            'text-lg md:text-xl font-bold text-white tracking-wide'
+        )
+
+        ui.label('Wildlife & Sensor Monitoring').classes(
+            'text-sm text-slate-300'
+        )
+
+    with ui.element('div').classes('relative w-full h-screen pt-14'):
 
         m = create_map(center_lat, center_lon)
 
@@ -372,7 +386,7 @@ async def main_page():
         # BirdNET summary card
         # ----------------------------
         summary_card = ui.card().classes(
-            'fixed left-4 top-4 z-[9998] w-80 '
+            'fixed left-4 top-20 z-[9998] w-80 '
             'bg-white/95 backdrop-blur shadow-xl rounded-xl p-4'
         )
 
@@ -490,13 +504,13 @@ async def main_page():
             icon='layers',
             on_click=toggle_layers,
         ).props('flat').classes(
-            'fixed right-4 top-4 z-[9999] '
+            'fixed right-4 top-20 z-[9999] '
             'bg-blue-400 text-white '
             'rounded-md shadow px-2 py-2'
         ).tooltip('Open layer list')
 
         layers_panel = ui.card().classes(
-            'fixed right-4 top-16 z-[9998] w-80 '
+            'fixed right-4 top-24 z-[9998] w-80 '
             'bg-white shadow-xl rounded-lg p-3 '
             'max-h-[80vh] overflow-y-auto'
         )
@@ -553,49 +567,46 @@ async def main_page():
                 'backdrop-blur'
             ):
 
-                def rewind():
-                    idx['value'] = max(0, idx['value'] - 1)
+                def jump_to(new_index: int):
+                    idx['value'] = max(0, min(len(times) - 1, new_index))
                     timeline.value = idx['value']
                     time_label.text = fmt(times[idx['value']])
 
                     selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
                     selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
+
                     refresh_marker_popups()
                     refresh_birdnet_summary()
+
+
+                def rewind():
+                    jump_to(idx['value'] - 1)
+
 
                 def forward():
-                    idx['value'] = min(len(times) - 1, idx['value'] + 1)
-                    timeline.value = idx['value']
-                    time_label.text = fmt(times[idx['value']])
+                    jump_to(idx['value'] + 1)
 
-                    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
-                    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
-                    refresh_marker_popups()
-                    refresh_birdnet_summary()
 
                 async def play_loop():
-                    while playing['value']:
-                        if idx['value'] < len(times) - 1:
-                            idx['value'] += 1
-                            timeline.value = idx['value']
-                            time_label.text = fmt(times[idx['value']])
+                    while playing['value'] and idx['value'] < len(times) - 1:
+                        jump_to(idx['value'] + 1)
+                        await asyncio.sleep(0.5)
 
-                            selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
-                            selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
-                            refresh_marker_popups()
-                            refresh_birdnet_summary()
+                    playing['value'] = False
+                    play_btn.text = '▶'
 
-                        await ui.sleep(0.5)
 
                 def toggle_play():
                     playing['value'] = not playing['value']
                     play_btn.text = '⏸' if playing['value'] else '▶'
-                    if playing['value']:
-                        ui.timer(0.0, play_loop, once=True)
 
-                ui.button('⏮', on_click=rewind).classes('text-white')
-                play_btn = ui.button('▶', on_click=toggle_play).classes('text-white')
-                ui.button('⏭', on_click=forward).classes('text-white')
+                    if playing['value']:
+                        asyncio.create_task(play_loop())
+
+
+                rewind_btn = ui.button('⏮', on_click=rewind).classes('text-white').tooltip('Previous time step')
+                play_btn = ui.button('▶', on_click=toggle_play).classes('text-white').tooltip('Play / Pause')
+                forward_btn = ui.button('⏭', on_click=forward).classes('text-white').tooltip('Next time step')
 
                 time_label = ui.label(fmt(times[idx['value']])).classes(
                     'text-xs text-slate-200 w-48 text-center'
