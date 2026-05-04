@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from statistics import mean
 from typing import Any, Dict, List, Tuple
+from datetime import datetime, timedelta
 
 
 def flatten_items(cfg_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -22,14 +23,17 @@ def flatten_items(cfg_dict: Dict[str, Any]) -> List[Dict[str, Any]]:
     return flat
 
 
-def make_time_range():
+def make_time_range(hours=24, step_minutes=30):
     end = datetime.now()
-    start = end - timedelta(days=1)
+    start = end - timedelta(hours=hours)
+
     times = []
-    t = start
-    while t <= end:
-        times.append(t)
-        t += timedelta(minutes=30)
+    current = start
+
+    while current <= end:
+        times.append(current)
+        current += timedelta(minutes=step_minutes)
+
     return times
 
 

@@ -101,7 +101,14 @@ async def main_page():
     </style>
     ''')
 
-    times = make_time_range()
+    time_range_options = {
+        'Last 24 hours': 24,
+        'Last 7 days': 24 * 7,
+        'Last 30 days': 24 * 30,
+    }
+
+    selected_time_range = {'value': 'Last 24 hours'}
+    times = make_time_range(hours=time_range_options[selected_time_range['value']])
     idx = {'value': len(times) - 1}
 
     markers: Dict[str, Any] = {}
@@ -637,6 +644,41 @@ async def main_page():
                 )
 
                 mode_select.style('''
+                    background: linear-gradient(to right, #1e293b, #0f172a);
+                    color: white;
+                ''')
+                def on_time_range_change(e):
+                    selected_time_range['value'] = e.value
+
+                    new_times = make_time_range(
+                    hours=time_range_options[selected_time_range['value']]
+                    )
+
+                    times.clear()
+                    times.extend(new_times)
+
+                    idx['value'] = len(times) - 1
+
+                    timeline.max = len(times) - 1
+                    timeline.value = idx['value']
+                    time_label.text = fmt(times[idx['value']])
+
+                    selected_sensor_data['value'] = load_sensor_snapshot_for_time(times[idx['value']])
+                    selected_acoustic_data['value'] = load_acoustic_snapshot_for_time(times[idx['value']])
+
+                    refresh_marker_popups()
+                    refresh_birdnet_summary()
+
+
+                time_range_select = ui.select(
+                    options=list(time_range_options.keys()),
+                    value=selected_time_range['value'],
+                    on_change=on_time_range_change,
+                ).props('borderless dense popup-content-class=mode-select-menu').classes(
+                    'mode-select rounded-2xl min-w-[150px] h-10 px-3'
+                )
+
+                time_range_select.style('''
                     background: linear-gradient(to right, #1e293b, #0f172a);
                     color: white;
                 ''')
