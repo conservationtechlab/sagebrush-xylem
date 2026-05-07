@@ -3,15 +3,97 @@ from nicegui import ui
 
 
 def create_map(center_lat, center_lon):
+    """Create a Leaflet map using OpenStreetMap tiles (not topo)."""
     m = ui.leaflet(center=(center_lat, center_lon), zoom=15).classes('w-full h-full')
+    # Use standard OSM tiles to match the target UI screenshot
     m.tile_layer(
-        url_template='https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-        options={'maxZoom': 17},
+        url_template='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        options={
+            'maxZoom': 19,
+            'attribution': '© OpenStreetMap contributors',
+        },
     )
     return m
 
 
+def get_marker_icon_js(category: str) -> str:
+    """
+    Return a :L.divIcon(...) string for use with m.run_layer_method(mk.id, 'setIcon', ...).
+    Each category gets a teardrop-style pin with a sensor icon inside.
+    """
+    if category == "Temperature Sensors":
+        bg_color = "#F97316"       # orange
+        border_color = "#c2410c"
+        icon_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="white" width="12" height="12">'
+            '<path d="M12 2a5 5 0 00-5 5c0 3.5 5 11 5 11s5-7.5 5-11a5 5 0 00-5-5zm0 7a2 2 0 110-4 2 2 0 010 4z"/>'
+            '</svg>'
+        )
+    elif category == "SageMic":
+        bg_color = "#22C55E"       # green
+        border_color = "#15803d"
+        icon_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="white" width="12" height="12">'
+            '<path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm-1 1.93V18H9v2h6v-2h-2v-2.07A7 7 0 0019 11h-2a5 5 0 01-10 0H5a7 7 0 006 6.93z"/>'
+            '</svg>'
+        )
+    elif category == "scrubmic":
+        bg_color = "#A855F7"       # purple
+        border_color = "#7e22ce"
+        icon_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="white" width="12" height="12">'
+            '<path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm-1 1.93V18H9v2h6v-2h-2v-2.07A7 7 0 0019 11h-2a5 5 0 01-10 0H5a7 7 0 006 6.93z"/>'
+            '</svg>'
+        )
+    else:
+        bg_color = "#94A3B8"       # slate
+        border_color = "#475569"
+        icon_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
+            'fill="white" width="12" height="12">'
+            '<circle cx="12" cy="12" r="5"/>'
+            '</svg>'
+        )
+
+    # Teardrop pin shape: circle top with a point at bottom
+    pin_html = (
+        f"<div style='"
+        f"width:28px;height:36px;position:relative;display:flex;"
+        f"flex-direction:column;align-items:center;"
+        f"'>"
+        f"<div style='"
+        f"width:28px;height:28px;"
+        f"background:{bg_color};"
+        f"border:2.5px solid {border_color};"
+        f"border-radius:50% 50% 50% 0;"
+        f"transform:rotate(-45deg);"
+        f"box-shadow:0 3px 10px rgba(0,0,0,0.35);"
+        f"display:flex;align-items:center;justify-content:center;"
+        f"'>"
+        f"<div style='transform:rotate(45deg);display:flex;align-items:center;justify-content:center;'>"
+        f"{icon_svg}"
+        f"</div>"
+        f"</div>"
+        f"</div>"
+    )
+
+    return (
+        ":L.divIcon({"
+        "className: '',"
+        f"html: {pin_html!r},"
+        "iconSize: [28, 36],"
+        "iconAnchor: [14, 36],"
+        "popupAnchor: [0, -38]"
+        "})"
+    )
+
+
 def popup_html(item: Dict[str, Any]) -> str:
+    """Generate styled HTML for a Leaflet marker popup."""
+
     def pretty_species_name(name: Any) -> str:
         if not name:
             return "--"
@@ -32,12 +114,14 @@ def popup_html(item: Dict[str, Any]) -> str:
     temperature = item.get('temperature')
     humidity = item.get('humidity')
     bat_v = item.get('bat_v')
-
     acoustic_recorded_at = item.get('acoustic_recorded_at')
     species = item.get('species')
     confidence = item.get('confidence')
     filepath = item.get('filepath')
 
+    # -------------------------------------------------------
+    # Temperature Sensor popup — matches target screenshot
+    # -------------------------------------------------------
     if category == "Temperature Sensors":
         temp_val = f"{round(temperature, 1)}°C" if temperature is not None else "--"
         hum_val = f"{round(humidity, 1)}%" if humidity is not None else "--"
@@ -45,380 +129,157 @@ def popup_html(item: Dict[str, Any]) -> str:
 
         return f"""
         <div style="
-            min-width:260px;
+            min-width:240px;
             font-family: Inter, system-ui, -apple-system, sans-serif;
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.18);
             overflow: hidden;
             color: #0f172a;
         ">
             <div style="
                 background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
-                padding: 12px 14px;
+                padding: 10px 14px;
                 color: white;
             ">
-                <div style="
-                    font-size: 12px;
-                    font-weight: 700;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    opacity: 0.95;
-                ">
+                <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">
                     Temperature Sensor
                 </div>
-                <div style="
-                    font-size: 16px;
-                    font-weight: 700;
-                    margin-top: 2px;
-                    line-height: 1.2;
-                ">
-                    {device_name}
-                </div>
+                <div style="font-size:15px;font-weight:700;margin-top:2px;">{device_name}</div>
             </div>
-
-            <div style="padding: 14px;">
-                <div style="
-                    display: flex;
-                    gap: 10px;
-                    margin-bottom: 12px;
-                ">
-                    <div style="
-                        flex: 1;
-                        background: #fff7ed;
-                        border: 1px solid #fed7aa;
-                        border-radius: 14px;
-                        padding: 12px;
-                        text-align: center;
-                    ">
-                        <div style="
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: #c2410c;
-                            line-height: 1;
-                        ">
-                            {temp_val}
-                        </div>
-                        <div style="
-                            margin-top: 6px;
-                            font-size: 11px;
-                            font-weight: 700;
-                            letter-spacing: 0.08em;
-                            color: #9a3412;
-                        ">
-                            TEMP
-                        </div>
+            <div style="padding:12px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                    <div style="grid-column:span 2;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:13px;margin-bottom:2px;">🌡️</div>
+                        <div style="font-size:22px;font-weight:800;color:#c2410c;line-height:1;">{temp_val}</div>
+                        <div style="font-size:10px;font-weight:700;color:#9a3412;margin-top:4px;letter-spacing:.06em;">TEMPERATURE</div>
                     </div>
-
-                    <div style="
-                        flex: 1;
-                        background: #f8fafc;
-                        border: 1px solid #e2e8f0;
-                        border-radius: 14px;
-                        padding: 12px;
-                        text-align: center;
-                    ">
-                        <div style="
-                            font-size: 28px;
-                            font-weight: 800;
-                            color: #0f172a;
-                            line-height: 1;
-                        ">
-                            {hum_val}
-                        </div>
-                        <div style="
-                            margin-top: 6px;
-                            font-size: 11px;
-                            font-weight: 700;
-                            letter-spacing: 0.08em;
-                            color: #475569;
-                        ">
-                            HUMIDITY
-                        </div>
+                    <div style="grid-column:span 2;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:13px;margin-bottom:2px;">💧</div>
+                        <div style="font-size:22px;font-weight:800;color:#0369a1;line-height:1;">{hum_val}</div>
+                        <div style="font-size:10px;font-weight:700;color:#075985;margin-top:4px;letter-spacing:.06em;">HUMIDITY</div>
+                    </div>
+                    <div style="grid-column:span 2;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:13px;margin-bottom:2px;">🔋</div>
+                        <div style="font-size:18px;font-weight:700;color:#0f172a;line-height:1;">{battery_val}</div>
+                        <div style="font-size:10px;font-weight:700;color:#475569;margin-top:4px;letter-spacing:.06em;">BATTERY</div>
+                    </div>
+                    <div style="grid-column:span 2;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:13px;margin-bottom:2px;">🕐</div>
+                        <div style="font-size:11px;font-weight:600;color:#334155;line-height:1.3;">{recorded_at}</div>
+                        <div style="font-size:10px;font-weight:700;color:#475569;margin-top:4px;letter-spacing:.06em;">LAST UPDATED</div>
                     </div>
                 </div>
-
-                <div style="
-                    display: grid;
-                    gap: 8px;
-                    font-size: 12px;
-                    color: #475569;
-                ">
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                    ">
-                        <span style="font-weight: 600;">Updated</span>
-                        <span>{recorded_at}</span>
-                    </div>
-
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                    ">
-                        <span style="font-weight: 600;">Battery</span>
-                        <span>{battery_val}</span>
-                    </div>
-
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                        gap: 12px;
-                    ">
-                        <span style="font-weight: 600;">ID</span>
-                        <span style="text-align: right; word-break: break-word;">{device_id}</span>
-                    </div>
+                <div style="background:#f8fafc;border-radius:8px;padding:6px 10px;font-size:11px;color:#64748b;display:flex;justify-content:space-between;">
+                    <span style="font-weight:600;">ID</span>
+                    <span style="word-break:break-all;text-align:right;max-width:160px;">{device_id}</span>
                 </div>
             </div>
         </div>
         """
 
-    if category == "SageMic":
+    # -------------------------------------------------------
+    # Acoustic Sensor (SageMic / scrubmic) popup
+    # -------------------------------------------------------
+    if category in ("SageMic", "scrubmic"):
         battery_val = f"{round(bat_v, 2)} V" if bat_v is not None else "--"
         confidence_val = format_confidence_percent(confidence)
         acoustic_time_val = acoustic_recorded_at or "--"
         species_val = pretty_species_name(species)
 
+        header_color = (
+            "linear-gradient(135deg, #4ade80 0%, #16a34a 100%)"
+            if category == "SageMic"
+            else "linear-gradient(135deg, #c084fc 0%, #7e22ce 100%)"
+        )
+        label_text = "Acoustic Sensor (SageMic)" if category == "SageMic" else "Acoustic Sensor (ScrubMic)"
+
         filepath_block = ""
         if filepath:
             filepath_block = f"""
-            <div style="
-                display: flex;
-                flex-direction: column;
-                background: #f8fafc;
-                border-radius: 10px;
-                padding: 8px 10px;
-                gap: 4px;
-            ">
-                <span style="font-weight: 600;">File</span>
-                <span style="
-                    display: block;
-                    max-height: 40px;
-                    overflow-y: auto;
-                    font-size: 11px;
-                    line-height: 1.3;
-                    color: #334155;
-                    word-break: break-all;
-                ">
-                    {filepath}
-                </span>
+            <div style="background:#f8fafc;border-radius:8px;padding:6px 10px;font-size:11px;color:#64748b;margin-top:6px;">
+                <span style="font-weight:600;display:block;margin-bottom:2px;">File</span>
+                <span style="word-break:break-all;font-size:10px;line-height:1.4;">{filepath}</span>
             </div>
             """
 
         return f"""
         <div style="
-            min-width:280px;
+            min-width:260px;
             font-family: Inter, system-ui, -apple-system, sans-serif;
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.18);
             overflow: hidden;
             color: #0f172a;
         ">
-            <div style="
-                background: linear-gradient(135deg, #4ade80 0%, #16a34a 100%);
-                padding: 12px 14px;
-                color: white;
-            ">
-                <div style="
-                    font-size: 12px;
-                    font-weight: 700;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    opacity: 0.95;
-                ">
-                    Acoustic Sensor
-                </div>
-                <div style="
-                    font-size: 16px;
-                    font-weight: 700;
-                    margin-top: 2px;
-                    line-height: 1.2;
-                ">
-                    {device_name}
-                </div>
+            <div style="background:{header_color};padding:10px 14px;color:white;">
+                <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">{label_text}</div>
+                <div style="font-size:15px;font-weight:700;margin-top:2px;">{device_name}</div>
             </div>
-
-            <div style="padding: 14px;">
-                <div style="
-                    display: flex;
-                    gap: 10px;
-                    margin-bottom: 12px;
-                ">
-                    <div style="
-                        flex: 1;
-                        background: #f0fdf4;
-                        border: 1px solid #bbf7d0;
-                        border-radius: 14px;
-                        padding: 12px;
-                        text-align: center;
-                    ">
-                        <div style="
-                            font-size: 16px;
-                            font-weight: 800;
-                            color: #166534;
-                            line-height: 1.15;
-                            word-break: break-word;
-                        ">
-                            {species_val}
-                        </div>
-                        <div style="
-                            margin-top: 6px;
-                            font-size: 11px;
-                            font-weight: 700;
-                            letter-spacing: 0.08em;
-                            color: #166534;
-                        ">
-                            SPECIES
-                        </div>
+            <div style="padding:12px;">
+                <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:15px;font-weight:800;color:#166534;line-height:1.2;word-break:break-word;">{species_val}</div>
+                        <div style="font-size:10px;font-weight:700;color:#166534;margin-top:4px;letter-spacing:.06em;">SPECIES</div>
                     </div>
-
-                    <div style="
-                        width: 110px;
-                        background: #ecfeff;
-                        border: 1px solid #a5f3fc;
-                        border-radius: 14px;
-                        padding: 12px;
-                        text-align: center;
-                    ">
-                        <div style="
-                            font-size: 24px;
-                            font-weight: 800;
-                            color: #155e75;
-                            line-height: 1;
-                        ">
-                            {confidence_val}
-                        </div>
-                        <div style="
-                            margin-top: 6px;
-                            font-size: 11px;
-                            font-weight: 700;
-                            letter-spacing: 0.08em;
-                            color: #155e75;
-                        ">
-                            CONFIDENCE
-                        </div>
+                    <div style="width:90px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:10px;padding:10px;text-align:center;">
+                        <div style="font-size:22px;font-weight:800;color:#155e75;line-height:1;">{confidence_val}</div>
+                        <div style="font-size:10px;font-weight:700;color:#155e75;margin-top:4px;letter-spacing:.06em;">CONFIDENCE</div>
                     </div>
                 </div>
-
-                <div style="
-                    display: grid;
-                    gap: 8px;
-                    font-size: 12px;
-                    color: #475569;
-                ">
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                    ">
-                        <span style="font-weight: 600;">Sensor Updated</span>
-                        <span>{recorded_at}</span>
+                <div style="display:grid;gap:6px;font-size:11px;color:#475569;">
+                    <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                        <span style="font-weight:600;">🕐 Sensor Updated</span><span>{recorded_at}</span>
                     </div>
-
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                    ">
-                        <span style="font-weight: 600;">Acoustic Time</span>
-                        <span>{acoustic_time_val}</span>
+                    <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                        <span style="font-weight:600;">🎵 Acoustic Time</span><span>{acoustic_time_val}</span>
                     </div>
-
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                    ">
-                        <span style="font-weight: 600;">Battery</span>
-                        <span>{battery_val}</span>
+                    <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                        <span style="font-weight:600;">🔋 Battery</span><span>{battery_val}</span>
                     </div>
-
-                    <div style="
-                        display: flex;
-                        justify-content: space-between;
-                        background: #f8fafc;
-                        border-radius: 10px;
-                        padding: 8px 10px;
-                        gap: 12px;
-                    ">
-                        <span style="font-weight: 600;">ID</span>
-                        <span style="text-align: right; word-break: break-word;">{device_id}</span>
+                    <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;gap:10px;">
+                        <span style="font-weight:600;">ID</span>
+                        <span style="text-align:right;word-break:break-all;max-width:160px;">{device_id}</span>
                     </div>
-
                     {filepath_block}
                 </div>
             </div>
         </div>
         """
 
+    # -------------------------------------------------------
+    # Generic fallback popup
+    # -------------------------------------------------------
     battery_val = f"{round(bat_v, 2)} V" if bat_v is not None else "N/A"
 
     return f"""
     <div style="
-        min-width:240px;
+        min-width:220px;
         font-family: Inter, system-ui, -apple-system, sans-serif;
         background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(15,23,42,0.18);
         overflow: hidden;
         color: #0f172a;
     ">
-        <div style="
-            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
-            padding: 12px 14px;
-            color: white;
-        ">
-            <div style="
-                font-size: 12px;
-                font-weight: 700;
-                letter-spacing: 0.08em;
-                text-transform: uppercase;
-                opacity: 0.95;
-            ">
-                Sensor
-            </div>
-            <div style="
-                font-size: 16px;
-                font-weight: 700;
-                margin-top: 2px;
-                line-height: 1.2;
-            ">
-                {device_name}
-            </div>
+        <div style="background:linear-gradient(135deg,#94a3b8 0%,#64748b 100%);padding:10px 14px;color:white;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.9;">Sensor</div>
+            <div style="font-size:15px;font-weight:700;margin-top:2px;">{device_name}</div>
         </div>
-
-        <div style="padding: 14px; display:grid; gap:8px; font-size:12px; color:#475569;">
-            <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:8px 10px;">
-                <span style="font-weight:600;">Category</span>
-                <span>{category}</span>
+        <div style="padding:12px;display:grid;gap:6px;font-size:11px;color:#475569;">
+            <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                <span style="font-weight:600;">Category</span><span>{category}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:8px 10px;">
-                <span style="font-weight:600;">Updated</span>
-                <span>{recorded_at}</span>
+            <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                <span style="font-weight:600;">🕐 Updated</span><span>{recorded_at}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:8px 10px;">
-                <span style="font-weight:600;">Battery</span>
-                <span>{battery_val}</span>
+            <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;">
+                <span style="font-weight:600;">🔋 Battery</span><span>{battery_val}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; background:#f8fafc; border-radius:10px; padding:8px 10px; gap:12px;">
+            <div style="display:flex;justify-content:space-between;background:#f8fafc;border-radius:8px;padding:6px 10px;gap:10px;">
                 <span style="font-weight:600;">ID</span>
-                <span style="text-align:right; word-break:break-word;">{device_id}</span>
+                <span style="text-align:right;word-break:break-all;">{device_id}</span>
             </div>
         </div>
     </div>
@@ -435,7 +296,6 @@ def set_custom_icon(map_obj, marker, icon_path: str):
         f"<img src=\"{icon_url}\" style='width:100%;height:100%;object-fit:cover;'/>"
         "</div>"
     )
-
     js_icon = (
         ":L.divIcon({"
         "className: '',"
@@ -445,18 +305,15 @@ def set_custom_icon(map_obj, marker, icon_path: str):
         "popupAnchor: [0,-34]"
         "})"
     )
-
     map_obj.run_layer_method(marker.id, "setIcon", js_icon)
 
 
 def add_boundary_polygon(map_obj, name: str, latlngs: List[Tuple[float, float]]):
     latlngs_js = [[lat, lon] for lat, lon in latlngs]
-
     options = {
-        "color": "#FF00FF",
-        "weight": 6,
+        "color": "#16a34a",
+        "weight": 3,
         "fill": True,
-        "fillOpacity": 0.18,
+        "fillOpacity": 0.08,
     }
-
     return map_obj.generic_layer(name=name, args=[":L.polygon", latlngs_js, options])
