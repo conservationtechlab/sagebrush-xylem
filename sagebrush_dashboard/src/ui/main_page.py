@@ -4,7 +4,7 @@ from statistics import mean
 from collections import Counter
 from datetime import datetime, timedelta
 
-from nicegui import ui
+from nicegui import ui, app
 
 from src.database.fetch_site_boundary import get_site_boundary_feature
 from src.database.fetch_device_coordinates import get_devices, categorize_devices
@@ -13,6 +13,11 @@ from src.database.fetch_sensor_snapshot import get_sensor_snapshot_at
 from src.database.fetch_acoustic_snapshot import get_acoustic_snapshot_at
 from src.mapping.map_view import create_map, popup_html
 from src.scripts.data_arch import make_time_range, fmt
+
+
+# Serve NAS audio files as static files under /audio
+# e.g. /mnt/sagebase/sagemic1_ac6/file.wav → http://host/audio/sagemic1_ac6/file.wav
+app.add_static_files('/audio', '/mnt/sagebase')
 
 
 @ui.page('/')
@@ -362,7 +367,12 @@ L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._lat
                     ui.label('TOP SPECIES').style('color:#64748b;font-size:10px;font-weight:700;letter-spacing:.08em;')
                     top_species_column = ui.column().classes('w-full').style('gap:4px;margin-top:4px;')
 
-
+                # Recent Acoustic Detections card
+                with ui.element('div').style('background:#1e293b;border-radius:12px;padding:12px;'):
+                    with ui.element('div').style('display:flex;align-items:center;gap:8px;margin-bottom:8px;'):
+                        ui.icon('hearing').style('color:#a78bfa;font-size:18px;')
+                        ui.label('Recent Detections').style('color:#fff;font-weight:700;font-size:13px;')
+                    acoustic_detections_column = ui.column().classes('w-full').style('gap:6px;')
 
                 # Temperature legend
                 with ui.element('div').style('background:#1e293b;border-radius:12px;padding:10px;'):
@@ -608,20 +618,66 @@ L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._lat
                 unique_label.text   = str(s['unique_species'])
                 avg_conf_label.text = f"{s['avg_confidence']}%" if s['avg_confidence'] is not None else '--'
                 summary_time.text   = f"Latest: {s['latest_time'] or '--'}"
+
+                # Top species
                 top_species_column.clear()
                 with top_species_column:
                     if s['top_species']:
                         for sp, cnt in s['top_species']:
                             with ui.element('div').style(
                                 'display:flex;align-items:center;justify-content:space-between;'
-                                'background:#1e293b;border-radius:6px;padding:4px 8px;'
+                                'background:#0f172a;border-radius:6px;padding:4px 8px;'
                             ):
                                 ui.button(sp, on_click=lambda s=sp: open_bird_popup(s)).props('flat dense').style(
                                     'color:#60a5fa;font-size:12px;text-transform:none;'
                                 )
                                 ui.label(str(cnt)).style('color:#94a3b8;font-size:12px;font-weight:600;')
                     else:
-                        ui.label('No acoustic detections').style('color:#64748b;font-size:12px;')
+                        ui.label('No detections').style('color:#64748b;font-size:12px;')
+
+                # Recent acoustic detections with audio player
+                acoustic_detections_column.clear()
+                acoustic_data = selected_acoustic_data['value']
+                if not acoustic_data:
+                    with acoustic_detections_column:
+                        ui.label('No detections at this time').style('color:#64748b;font-size:11px;')
+                else:
+                    with acoustic_detections_column:
+                        for device_id, row in list(acoustic_data.items())[:6]:
+                            species   = row.get('species') or '--'
+                            conf      = row.get('confidence')
+                            rec_at    = row.get('recorded_at') or '--'
+                            filepath  = row.get('filepath')
+                            conf_pct  = f"{round(float(conf)*100)}%" if conf is not None else '--'
+                            common    = pretty_species_name(species)
+
+                            # Build audio URL
+                            audio_url = None
+                            if filepath:
+                                clean = str(filepath).strip()
+                                for pfx in ['/mnt/sagebase/', '/mnt/sagebase']:
+                                    if clean.startswith(pfx):
+                                        clean = clean[len(pfx):]
+                                        break
+                                audio_url = f"/audio/{clean.lstrip('/')}"
+
+                            with ui.element('div').style(
+                                'background:#0f172a;border-radius:8px;padding:8px;'
+                                'border-left:3px solid #7c3aed;'
+                            ):
+                                with ui.element('div').style('display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'):
+                                    ui.button(common, on_click=lambda s=species: open_bird_popup(s)).props('flat dense').style(
+                                        'color:#a78bfa;font-size:12px;font-weight:700;text-transform:none;padding:0;'
+                                    )
+                                    ui.label(conf_pct).style('color:#22d3ee;font-size:11px;font-weight:600;')
+                                ui.label(device_id.lower()).style('color:#475569;font-size:10px;display:block;')
+                                ui.label(str(rec_at)[:19] if rec_at != '--' else '--').style('color:#475569;font-size:10px;display:block;margin-bottom:4px;')
+                                if audio_url:
+                                    ui.html(f'''<audio controls style="width:100%;height:28px;accent-color:#7c3aed;" preload="none">
+                                        <source src="{audio_url}" type="audio/wav">
+                                    </audio>''')
+                                else:
+                                    ui.label('No audio file').style('color:#334155;font-size:10px;font-style:italic;')
 
 
 

@@ -196,10 +196,27 @@ def popup_html(item: Dict[str, Any]) -> str:
 
         filepath_block = ""
         if filepath:
+            # Strip /mnt/sagebase prefix to build /audio/ URL served by NiceGUI
+            clean_path = str(filepath).strip()
+            for prefix in ['/mnt/sagebase/', '/mnt/sagebase']:
+                if clean_path.startswith(prefix):
+                    clean_path = clean_path[len(prefix):]
+                    break
+            clean_path = clean_path.lstrip('/')
+            audio_url  = f"/audio/{clean_path}"
+            filename   = clean_path.split('/')[-1]
+
             filepath_block = f"""
-            <div style="background:#f8fafc;border-radius:8px;padding:6px 10px;font-size:11px;color:#64748b;margin-top:6px;">
-                <span style="font-weight:600;display:block;margin-bottom:2px;">File</span>
-                <span style="word-break:break-all;font-size:10px;line-height:1.4;">{filepath}</span>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px;margin-top:6px;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+                    <span style="font-size:14px;">🎵</span>
+                    <span style="font-size:11px;font-weight:700;color:#166534;">Audio Recording</span>
+                </div>
+                <audio controls style="width:100%;height:36px;accent-color:#16a34a;" preload="none">
+                    <source src="{audio_url}" type="audio/wav">
+                    Your browser does not support audio.
+                </audio>
+                <div style="font-size:9px;color:#94a3b8;margin-top:4px;word-break:break-all;">{filename}</div>
             </div>
             """
 

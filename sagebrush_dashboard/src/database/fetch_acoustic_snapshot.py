@@ -1,10 +1,23 @@
 import json
+import glob
 import psycopg2
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, Any, List
+from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
 
 BASE_DIR = Path(__file__).parent
+NAS_BASE  = Path('/mnt/sagebase')
+
+# Devices on NAS that have acoustic data
+NAS_DEVICES = [
+    'sagemic1_ac6',
+    'sagemic3_ac2',
+    'sagemic6_oll',
+    'sagemic_boa_hills',
+    'sagemic_ridge',
+    'sagemic_lte_balcony',
+    'birdnet',
+]
 
 
 def normalize_id(s: str) -> str:
@@ -15,54 +28,104 @@ def _get_conn():
     with open(BASE_DIR / "db_credentials.json") as f:
         creds = json.load(f)
     return psycopg2.connect(
-        host=creds["host"],
-        port=creds["port"],
-        dbname=creds["database"],
-        user=creds["user"],
-        password=creds["password"],
-        sslmode="prefer",
+        host=creds["host"], port=creds["port"],
+        dbname=creds["database"], user=creds["user"],
+        password=creds["password"], sslmode="prefer",
     )
+
+
+def _parse_wav_filename(filepath: Path) -> Optional[Dict[str, Any]]:
+    """
+    Parse a WAV filename into its components.
+    Format: {HH-MM-SS}_{Species Name}_{confidence}.wav
+    Example: 16-07-38_Western Screech-Owl_0.18.wav
+    """
+    name = filepath.stem  # strip .wav
+    # Split on _ but species name can contain spaces and hyphens
+    # Format is: HH-MM-SS_Species Name_0.xx
+    # First token is always time (HH-MM-SS), last token is confidence float
+    parts = name.split('_')
+    if len(parts) < 3:
+        return None
+    try:
+        time_str   = parts[0]          # HH-MM-SS
+        conf_str   = parts[-1]         # 0.18
+        species    = '_'.join(parts[1:-1])  # everything between
+        confidence = float(conf_str)
+        hh, mm, ss = time_str.split('-')
+        return {
+            'time_str':   time_str,
+            'species':    species,       # 'Western Screech-Owl'
+            'confidence': confidence,
+            'filepath':   str(filepath),
+        }
+    except Exception:
+        return None
 
 
 def get_acoustic_snapshot_at(target_timestamp) -> Dict[str, Dict[str, Any]]:
     """
-    Return the most recent acoustic detection per device, at or before target_timestamp.
+    Return the most recent acoustic detection per device at or before target_timestamp.
+    Reads directly from NAS filenames — does not rely on DB filepath column.
     """
-    conn = _get_conn()
+    if isinstance(target_timestamp, str):
+        target_timestamp = datetime.fromisoformat(target_timestamp)
 
-    query = """
-    SELECT DISTINCT ON (UPPER(TRIM(d.device_id)))
-        d.device_id,
-        e.start_time,
-        o.class_id,
-        o.confidence,
-        e.filepath
-    FROM public.occurrence o
-    JOIN public.event e ON o.event_id = e.event_id
-    JOIN public.deployment d ON e.deployment_id = d.deployment_id
-    WHERE e.start_time <= %s
-    ORDER BY UPPER(TRIM(d.device_id)), e.start_time DESC;
-    """
+    target_date = target_timestamp.date()
+    result: Dict[str, Dict[str, Any]] = {}
 
-    cur = conn.cursor()
-    cur.execute(query, (target_timestamp,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    for device_name in NAS_DEVICES:
+        device_folder = NAS_BASE / device_name
+        if not device_folder.exists():
+            continue
 
-    data: Dict[str, Dict[str, Any]] = {}
+        best_file   = None
+        best_dt     = None
 
-    for device_id, start_time, class_id, confidence, filepath in rows:
-        norm_id = normalize_id(device_id)
-        data[norm_id] = {
-            "device_id": norm_id,
-            "recorded_at": str(start_time) if start_time is not None else None,
-            "species": class_id,
-            "confidence": float(confidence) if confidence is not None else None,
-            "filepath": filepath,
-        }
+        # Search today and up to 7 days back for the most recent detection
+        for days_back in range(8):
+            search_date   = target_date - timedelta(days=days_back)
+            date_folder   = device_folder / search_date.strftime('%Y-%m-%d')
+            if not date_folder.exists():
+                continue
 
-    return data
+            wav_files = sorted(date_folder.glob('*.wav'), reverse=True)
+
+            for wav in wav_files:
+                parsed = _parse_wav_filename(wav)
+                if not parsed:
+                    continue
+                try:
+                    hh, mm, ss = parsed['time_str'].split('-')
+                    file_dt = datetime(
+                        search_date.year, search_date.month, search_date.day,
+                        int(hh), int(mm), int(ss)
+                    )
+                except Exception:
+                    continue
+
+                if file_dt <= target_timestamp:
+                    if best_dt is None or file_dt > best_dt:
+                        best_dt   = file_dt
+                        best_file = parsed
+                        best_file['recorded_at'] = file_dt
+                    break  # files are sorted desc, first match is best for this day
+
+            if best_file:
+                break  # found something, stop going back further
+
+        if best_file:
+            norm_id = normalize_id(device_name)
+            result[norm_id] = {
+                'device_id':   norm_id,
+                'recorded_at': str(best_file['recorded_at']),
+                'species':     best_file['species'],
+                'confidence':  best_file['confidence'],
+                'filepath':    best_file['filepath'],
+            }
+
+    print(f"[acoustic_nas] snapshot at {target_timestamp}: {len(result)} devices")
+    return result
 
 
 def get_acoustic_time_series(
@@ -70,59 +133,56 @@ def get_acoustic_time_series(
     end_timestamp,
 ) -> List[Dict[str, Any]]:
     """
-    Return all acoustic detections between start_timestamp and end_timestamp.
-    Each row contains: device_id, start_time, species, confidence.
-
-    Used to populate the Bird Call Timeline chart in the sidebar.
+    Return all NAS detections between start and end timestamps.
     """
-    conn = _get_conn()
+    if isinstance(start_timestamp, str):
+        start_timestamp = datetime.fromisoformat(start_timestamp)
+    if isinstance(end_timestamp, str):
+        end_timestamp = datetime.fromisoformat(end_timestamp)
 
-    query = """
-    SELECT
-        d.device_id,
-        e.start_time,
-        o.class_id,
-        o.confidence
-    FROM public.occurrence o
-    JOIN public.event e ON o.event_id = e.event_id
-    JOIN public.deployment d ON e.deployment_id = d.deployment_id
-    WHERE e.start_time >= %s
-      AND e.start_time <= %s
-      AND o.class_id IS NOT NULL
-    ORDER BY e.start_time ASC;
-    """
+    results: List[Dict[str, Any]] = []
 
-    cur = conn.cursor()
-    cur.execute(query, (start_timestamp, end_timestamp))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    current_date = start_timestamp.date()
+    end_date     = end_timestamp.date()
 
-    result: List[Dict[str, Any]] = []
+    while current_date <= end_date:
+        for device_name in NAS_DEVICES:
+            date_folder = NAS_BASE / device_name / current_date.strftime('%Y-%m-%d')
+            if not date_folder.exists():
+                continue
 
-    for device_id, start_time, class_id, confidence in rows:
-        result.append({
-            "device_id": normalize_id(device_id),
-            "start_time": start_time,  # keep as datetime for aggregation
-            "species": class_id,
-            "confidence": float(confidence) if confidence is not None else None,
-        })
+            for wav in date_folder.glob('*.wav'):
+                parsed = _parse_wav_filename(wav)
+                if not parsed:
+                    continue
+                try:
+                    hh, mm, ss = parsed['time_str'].split('-')
+                    file_dt = datetime(
+                        current_date.year, current_date.month, current_date.day,
+                        int(hh), int(mm), int(ss)
+                    )
+                except Exception:
+                    continue
 
-    print(f"[acoustic_ts] loaded {len(result)} detections from {start_timestamp} to {end_timestamp}")
-    return result
+                if start_timestamp <= file_dt <= end_timestamp:
+                    results.append({
+                        'device_id':  normalize_id(device_name),
+                        'start_time': file_dt,
+                        'species':    parsed['species'],
+                        'confidence': parsed['confidence'],
+                        'filepath':   parsed['filepath'],
+                    })
+
+        current_date += timedelta(days=1)
+
+    print(f"[acoustic_nas] time series {start_timestamp} -> {end_timestamp}: {len(results)} detections")
+    return results
 
 
 if __name__ == "__main__":
-    from datetime import timedelta
-
-    now = datetime.now()
+    now  = datetime.now()
     snap = get_acoustic_snapshot_at(now)
-    print(f"Snapshot: {len(snap)} rows")
-    for k, v in list(snap.items())[:3]:
-        print(k, v)
-
-    print()
-    ts = get_acoustic_time_series(now - timedelta(days=7), now)
-    print(f"Time series: {len(ts)} detections")
-    for r in ts[:3]:
-        print(r)
+    print(f"\nSnapshot: {len(snap)} devices")
+    for k, v in snap.items():
+        print(f"  {k}: {v['species']} ({v['confidence']}) @ {v['recorded_at']}")
+        print(f"    file: {v['filepath']}")
