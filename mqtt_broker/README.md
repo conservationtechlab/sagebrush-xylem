@@ -87,6 +87,12 @@ In the compose file, add these lines to the 'tbmq' portion:
       LISTENER_SSL_PEM_KEY_PASSWORD: ""
 ```
 
+In the "volumes:" tab under the tbmq portion, ensure that you are also mounting the "certs" folder we made with the server.key and server.pem so that tbmq docker can access them.
+
+```
+- /home/<user>/certs:/config/certificates
+```
+
 Also ensure that under the 'ports' portion of the tbmq lines have a mapping for 8883:8883
 
 Re-run the tbmq-install-and-run bash script in the folder.
