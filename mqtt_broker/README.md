@@ -2,6 +2,8 @@
 
 We will host an MQTT Broker!
 
+![Architecture](images/architecture.png)
+
 ## Setting up your VM
 We use an Ubuntu 26 image in a virtual machine, and only enable ingress from port 22 to start, ideally only from the IP you
 will be SSHing in from. We will enable ingress and egress from port 8883 later, but for now just SSH access is needed.
