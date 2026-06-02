@@ -1,4 +1,6 @@
-### So, you want your custom IoT (non-LoRa) devices to send their data to your database in real time, from anywhere in the field?
+## So, you want your custom IoT (non-LoRa) devices to send their data to your database in real time, from anywhere in the field... what now?
+
+We will host an MQTT Broker!
 
 ## Setting up your VM
 We use an Ubuntu 26 image in a virtual machine, and only enable ingress from port 22 to start, ideally only from the IP you
