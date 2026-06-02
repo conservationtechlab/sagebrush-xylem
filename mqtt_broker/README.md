@@ -111,24 +111,24 @@ In TBMQ you will need to navigate to the 'Authentication' tab on the left. Click
 
 Then define the client ID, username, password. This will be used in Node-Red later, so record the password because you will not be able to access it again from TBMQ!
 
-![TBMQ Subscriber Client Authentication](tbmq-sub-client-auth.png)
+![TBMQ Subscriber Client Authentication](images/tbmq-sub-client-auth.png)
 
 Then define the topics that Node-Red will subscribe to. The provided image contains a test topic, if you change it, ensure that the publisher is sending a message that can still be received by this subscriber topic. 
 
-![TBMQ Example Topic](tbmq-client-topics.png)
+![TBMQ Example Topic](images/tbmq-client-topics.png)
 
 In Node-Red, you will need to add an mqtt in node from the available nodes on the left. You will need to create a new MQTT broker. 
 
 ![NodeRed MQTT In node](images/nodered-mqtt-in-node.png)
 
-![NodeRed MQTT Broker node](nodered-mqtt-broker-node.png)
+![NodeRed MQTT Broker node](images/nodered-mqtt-broker-node.png)
 
 The Session ID will be the client ID from TBMQ, and ensure you upload the rootCA you added to this machine in a previous step and enable TLS. 
 
 You will add the topic from TBMQ in the mqtt in node, and in the security tab in the mqtt broker node you will add the username and password from TBMQ for the subscriber client. 
 Choose a quality of service of 1. 
 
-![NodeRed Security Tab on MQTT Broker node](nodered-mqtt-broker-security-node.png)
+![NodeRed Security Tab on MQTT Broker node](images/nodered-mqtt-broker-security-node.png)
 
 Save and deploy, and you should see a green "connected" icon below the mqtt in node on the palette. Add a debug node so you can see the messages as they come in.
 
@@ -136,9 +136,9 @@ Save and deploy, and you should see a green "connected" icon below the mqtt in n
 In TBMQ, creating a publisher is about the same as creating a subscriber, except you will choose "Device" instead of "Application" in the client credential. Choose the same topic as the subscriber
 for this test.
 
-![TBMQ Publisher Client Credentials](tbmq-pub-client-credentials.png)
+![TBMQ Publisher Client Credentials](images/tbmq-pub-client-credentials.png)
 
-![TBMQ Publisher Client Authentication](tbmq-pub-client-auth.png)
+![TBMQ Publisher Client Authentication](images/tbmq-pub-client-auth.png)
 
 You can use the command line and mosquitto-client to send a test publish that should be visible in NodeRed, but note the example cli command provided by TBMQ after you create
 a publisher/subscriber will NOT work for how we set this up. If you would like to test from the command line (after successfully configuring nodered, you can use this command line
