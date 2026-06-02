@@ -4,7 +4,7 @@
 We use an Ubuntu 26 image in a virtual machine, and only enable ingress from port 22 to start, ideally only from the IP you
 will be SSHing in from. We will enable ingress and egress from port 8883 later, but for now just SSH access is needed.
 
-## TBMQ (ThingsBoard MQTT Broker)
+# TBMQ (ThingsBoard MQTT Broker)
 [TBMQ Setup Guide](https://thingsboard.io/docs/mqtt-broker/installation/docker/)
 
 The link describes the steps to setup the TBMQ Broker in a Docker container.
@@ -15,7 +15,13 @@ machine so you can access the UI from localhost:8080.
 ssh -L 8080:localhost:8080 user@host
 ```
 
-## Enabling TLS
+Once set-up, you will be able to access tbmq securely in your browser at:
+
+```
+localhost:8080
+```
+
+### Enabling TLS
 In order to enable one-way TLS, you need to generate a self-signed certificate root. It's recommended to create
 an intermediate key as well, but for the purpose of simplicity in this demo we will describe the making a root certificate,
 and a server certificate. 
@@ -99,16 +105,16 @@ Re-run the tbmq-install-and-run bash script in the folder.
 
 You may need to toggle the enable x.509 auth toggle in the main TBMQ UI once you re-navigate to the front-end. 
 
-## Ports
+### Ports
 Now that TLS is enabled on 8883, you can open that port within the Security Groups on the virtual host managing platform. 
 
-## Pub/Sub
+# Pub/Sub
 You will need Node-Red to be a subscriber and your device to be a publisher.
 
 See SageMic repo for a feature test script that publishes a message using the ID, username, and password created below.
 
 *IMPORTANT: TBMQ subscribers can only see publishes from the same PORT. Ie, if you send something, even to the same topic, over port 1883 and node-red is listening on 8883, it will not see it.
-### Subscriber
+## Subscriber
 Node-Red will be our subscriber. You need an MQTT in node, and you will need to configure the MQTT broker in node with our TBMQ information.
 
 In TBMQ you will need to navigate to the 'Authentication' tab on the left. Click the + sign on the top right to add a new client credential.
@@ -138,7 +144,7 @@ Choose a quality of service of 1.
 
 Save and deploy, and you should see a green "connected" icon below the mqtt in node on the palette. Add a debug node so you can see the messages as they come in.
 
-### Publisher
+## Publisher
 In TBMQ, creating a publisher is about the same as creating a subscriber, except you will choose "Device" instead of "Application" in the client credential. Choose the same topic as the subscriber
 for this test.
 
