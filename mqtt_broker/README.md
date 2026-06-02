@@ -59,7 +59,7 @@ Copy the rootCA.pem onto the end-device in a similar /certs folder, as well as o
 What we have created is a way to do one-way TLS, wherein the server gets authenticated by the publishers and subscribers, 
 ensuring that they are transmitting encrypted data to the correct MQTT broker, the rootca is able to encode/decode the messages. 
 
-# Further hardening
+### Further hardening
 Best practices would be to NOT self-sign, and to obtain a rootCA from an actual certificate authority, it will also involve doing
 two way TLS, which will remove the need for pub/sub usernames and passwords later. But one thing at a time!
 
@@ -97,3 +97,60 @@ You may need to toggle the enable x.509 auth toggle in the main TBMQ UI once you
 Now that TLS is enabled on 8883, you can open that port within the Security Groups on the virtual host managing platform. 
 
 ## Pub/Sub
+You will need Node-Red to be a subscriber and your device to be a publisher.
+
+See SageMic repo for a feature test script that publishes a message using the ID, username, and password created below.
+
+*IMPORTANT: TBMQ subscribers can only see publishes from the same PORT. Ie, if you send something, even to the same topic, over port 1883 and node-red is listening on 8883, it will not see it.
+### Subscriber
+Node-Red will be our subscriber. You need an MQTT in node, and you will need to configure the MQTT broker in node with our TBMQ information.
+
+In TBMQ you will need to navigate to the 'Authentication' tab on the left. Click the + sign on the top right to add a new client credential.
+
+![TBMQ Subscriber Client Credentials](images/tbmq-sub-client-credentials.png)
+
+Then define the client ID, username, password. This will be used in Node-Red later, so record the password because you will not be able to access it again from TBMQ!
+
+![TBMQ Subscriber Client Authentication](tbmq-sub-client-auth.png)
+
+Then define the topics that Node-Red will subscribe to. The provided image contains a test topic, if you change it, ensure that the publisher is sending a message that can still be received by this subscriber topic. 
+
+![TBMQ Example Topic](tbmq-client-topics.png)
+
+In Node-Red, you will need to add an mqtt in node from the available nodes on the left. You will need to create a new MQTT broker. 
+
+![NodeRed MQTT In node](images/nodered-mqtt-in-node.png)
+
+![NodeRed MQTT Broker node](nodered-mqtt-broker-node.png)
+
+The Session ID will be the client ID from TBMQ, and ensure you upload the rootCA you added to this machine in a previous step and enable TLS. 
+
+You will add the topic from TBMQ in the mqtt in node, and in the security tab in the mqtt broker node you will add the username and password from TBMQ for the subscriber client. 
+Choose a quality of service of 1. 
+
+![NodeRed Security Tab on MQTT Broker node](nodered-mqtt-broker-security-node.png)
+
+Save and deploy, and you should see a green "connected" icon below the mqtt in node on the palette. Add a debug node so you can see the messages as they come in.
+
+### Publisher
+In TBMQ, creating a publisher is about the same as creating a subscriber, except you will choose "Device" instead of "Application" in the client credential. Choose the same topic as the subscriber
+for this test.
+
+![TBMQ Publisher Client Credentials](tbmq-pub-client-credentials.png)
+
+![TBMQ Publisher Client Authentication](tbmq-pub-client-auth.png)
+
+You can use the command line and mosquitto-client to send a test publish that should be visible in NodeRed, but note the example cli command provided by TBMQ after you create
+a publisher/subscriber will NOT work for how we set this up. If you would like to test from the command line (after successfully configuring nodered, you can use this command line
+command to test from any machine, including within the tbmq server machine. Fill in the <> values with your own server, topic, path to certificate, client id, username, and password. 
+
+You should see "Hello World" printed to the Node-Red debug set up earlier.
+
+```
+mosquitto_pub -d -q 1 -h <ip of tbmq server> -p 8883 --cafile /path/to/rootCA.pem -t "<topic>" -i "<client id>" -u "<username>" -P "<password>" -m 'Hello World' -V mqttv311
+```
+
+Note that we recommend you setup a [Sagemic](https://github.com/conservationtechlab/sagemic)
+and use the feature test script to send instead as that will be what is used for a real deployment. 
+
+*When testing TBMQ publishing and subscribing from different devices, generate a new TBMQ client each time. If you reuse client IDs in different places or at the same time in multiple spots, it could get weird.
