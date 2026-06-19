@@ -11,7 +11,10 @@ will be SSHing in from. We will enable ingress and egress from port 8883 later, 
 # TBMQ (ThingsBoard MQTT Broker)
 [TBMQ Setup Guide](https://thingsboard.io/docs/mqtt-broker/installation/docker/)
 
-The link describes the steps to setup the TBMQ Broker in a Docker container.
+The setup guide provides a bash script to run which downloads the docker-compose.yml used to run TBMQ in a Docker container.
+TBMQ recommends running the bash script each time you'd like to start the docker container even after changes are made, so make sure
+to keep this bash script along with your docker-compose.yml.
+
 In order to view the Broker in your laptop browser from the VM, ensure you port forward to 8080 on your
 machine so you can access the UI from localhost:8080. 
 
@@ -26,7 +29,7 @@ localhost:8080
 ```
 
 ### Enabling TLS
-In order to enable one-way TLS, you need to generate a self-signed certificate root. It's recommended to create
+In order to create a private CA based server-auth setup and enable TLS from publishers and subscribers, you need to generate a self-signed certificate root. It's recommended to create
 an intermediate key as well, but for the purpose of simplicity in this demo we will describe the making a root certificate,
 and a server certificate. 
 
