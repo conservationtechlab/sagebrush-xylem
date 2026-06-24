@@ -20,7 +20,6 @@ pg_password.txt → database password
 
 pg_db.txt → database name
 
-Lock down files so they are not world-readable and keep the directory out of git with .gitignore.
 
 
 ### Entrypoint script
@@ -49,7 +48,7 @@ file_env POSTGRES_DB
 exec docker-entrypoint.sh postgres
 ```
 
-Then make it executable:
+Then make it executable and ensure not world-readable:
 
 ```bash
 chmod 700 secrets/pg-entrypoint.sh
