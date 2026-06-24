@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgis/postgis:18-3.6
+    entrypoint: ["/pg-entrypoint.sh"]
+    shm_size: "512m"
+    container_name: postgis-18-sagebase
+    ports:
+      - "5432:5432"
+    volumes:
+      - /home/user/dockers/postgresql/db/:/var/lib/postgresql
+      - ./secrets/pg-entrypoint.sh:/pg-entrypoint.sh:ro
+    environment:
+      TZ: 'America/Los_Angeles'
+      PGTZ: 'America/Los_Angeles'
+      # these are paths INSIDE the container
+      POSTGRES_USER_FILE: /run/secrets/pg_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
+      POSTGRES_DB_FILE: /run/secrets/pg_db
+    secrets:
+      - postgres_user
+      - postgres_password
+      - postgres_db
+    restart: unless-stopped
+
+secrets:
+  postgres_user:
+    file: ./secrets/pg_user.txt
+  postgres_password:
+    file: ./secrets/pg_password.txt
+  postgres_db:
+    file: ./secrets/pg_db.txt
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  sage_net:
+    external: true
