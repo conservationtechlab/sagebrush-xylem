@@ -20,9 +20,23 @@ pg_password.txt → database password
 
 pg_db.txt → database name
 
+### Security Best Practice
+Use the compose as documented with hardened external secrets and entrypoint script below. 
+For testing purposes, the credentials can be hardcoded into the compose. To do so comment out the 
+lines between
+```bash
+# SECURE -->
+...
+# <--
+```
+and uncomment the lines between
+```bash
+# INSECURE -->
+...
+#
+```
 
-
-### Entrypoint script
+#### Entrypoint script
 The postgis image expects POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB.
 Wrapper script reads the mounted secret files and exports variables before starting PostgreSQL.
 
