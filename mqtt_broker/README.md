@@ -78,61 +78,6 @@ ensuring that they are transmitting encrypted data to the correct MQTT broker, t
 Best practices would be to NOT self-sign, and to obtain a rootCA from an actual certificate authority, it will also involve doing
 two way TLS, which will remove the need for pub/sub usernames and passwords later. But one thing at a time!
 
-### Enabling mTLS (Two way TLS)
-- Follow this set of instructions for mTLS (skip the previous enabling TLS)  
-- In this section, work on your secure machine
-- Make sure all common names (CN) are distinct from each other
-**rootCA**
-
-```
-openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout rootCA.key -out rootCA.pem
-```
-- This creates `rootCA.key` and `rootCA.pem`
-- `rootCA.key` should never leave the machine 
-
-**TBMQ Certificates**
-
-```
-openssl genrsa -out server.key 2048
-openssl req -new -key server.key -out server.csr
-```
-- This creates your server key and csr
-
-```
-openssl x509 -req -in server.csr \
-  -CA rootCA.pem -CAkey rootCA.key -CAcreateserial \
-  -out server.crt -days 365 -sha256 \
-  -extfile <(printf "subjectAltName=DNS:<server-CN>,IP:<broker-ip>")
-```
-- mTLS has strict (inbound) host verification. If we didn't do sAN, it will compare the CN name and ip address and think they don't match
-- fill in the CN you gave your server in the csr process, and the ip of your broker
-- this will sign your server certificate!
-
-```
-cp server.crt server.pem
-cat rootCA.pem >> server.pem 
-```
-- This allows us to build the TrustStore, which is needed by mTLS
-
-```
-sudo chmod 644 server.pem
-sudo chmod 644 server.key
-```
-- This gives your docker container permission to read them  
-
-Move `server.pem` and `server.key` into `/home/user/certs` on the TBMQ machine  
-
-**Client certificates**
-
-This will basically be the same as that of server, but no need for sAN because it's outbound!
-```
-openssl genrsa -out client.key 2048
-openssl req -new -key client.key -out - client.csr
-openssl x509 -req -in client.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out client.crt -days 365 -sha256
-```
-
-Move `rootCA.pem`, `client.csr`, `client.key` into your end-device
-
 ## Modifying the docker-compose.yml
 
 Once the example broker has been set-up, we need to add in our TLS settings and increase our max data rate in the docker-compose.yml
@@ -140,7 +85,6 @@ Once the example broker has been set-up, we need to add in our TLS settings and 
 ```
 docker compose stop <container id>
 ```
-(or docker compose down?)
 
 In the compose file, add these lines to the 'tbmq' portion:
 
@@ -167,19 +111,8 @@ In the "volumes:" tab under the tbmq portion, ensure that you are also mounting 
 Also ensure that under the 'ports' portion of the tbmq lines have a mapping for 8883:8883
 
 Re-run the tbmq-install-and-run bash script in the folder.
-(Or just run `docker compose up -d` for non-destructive restart)
 
 You may need to toggle the enable x.509 auth toggle in the main TBMQ UI once you re-navigate to the front-end. 
-
-### TBMQ Broker UI
-Authentication -> Credentials
-- Name: anything
-- Client Type: Device
-- Credentials Type: X.509 Certificate Chain
-- Certificate Common Name: The exact one you gave it when you created .csr
-- Everything else blank
-Authentication -> Providers
-- Toggle X.509 Certificate Chain to Active
  
 ### Ports
 Now that TLS is enabled on 8883, you can open that port within the Security Groups on the virtual host managing platform. 
@@ -242,3 +175,138 @@ Note that we recommend you setup a [Sagemic](https://github.com/conservationtech
 and use the feature test script to send instead as that will be what is used for a real deployment. 
 
 *When testing TBMQ publishing and subscribing from different devices, generate a new TBMQ client each time. If you reuse client IDs in different places or at the same time in multiple spots, it could get weird.
+
+# TBMQ (mTLS)
+### Enabling mTLS (Two way TLS)
+- Follow this set of instructions for mTLS (skip the previous enabling TLS)  
+- In this section, work on your secure machine
+- Make sure all common names (CN) are distinct from each other
+
+**rootCA**
+
+```
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout rootCA.key -out rootCA.pem
+```
+- This creates `rootCA.key` and `rootCA.pem`
+- `rootCA.key` should never leave the machine 
+
+**TBMQ Certificates**
+
+```
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -out server.csr
+```
+- This creates your server key and csr
+
+```
+openssl x509 -req -in server.csr \
+  -CA rootCA.pem -CAkey rootCA.key -CAcreateserial \
+  -out server.crt -days 365 -sha256 \
+  -extfile <(printf "subjectAltName=DNS:<server-CN>,IP:<broker-ip>")
+```
+- mTLS has strict (inbound) host verification. If we didn't do sAN, it will compare the CN name and ip address and think they don't match
+- fill in the CN you gave your server in the csr process, and the ip of your broker
+- this will sign your server certificate!
+
+```
+cp server.crt server.pem
+cat rootCA.pem >> server.pem 
+```
+- This allows us to build the TrustStore, which is needed by mTLS
+
+Move `server.pem` and `server.key` into `/home/user/certs` on the TBMQ machine  
+
+**Client certificates**
+
+This will basically be the same as that of server, but no need for sAN because it's outbound!
+Do this for both NodeRed and end-device!
+
+```
+openssl genrsa -out client.key 2048
+openssl req -new -key client.key -out client.csr
+openssl x509 -req -in client.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out client.crt -days 365 -sha256
+```
+
+Move `rootCA.pem`, `client.crt`, `client.key` into your end-device/NodeRed
+
+### TBMQ Machine Configuration
+Once the example broker has been set-up, we need to add in our TLS settings and increase our max data rate in the docker-compose.yml
+
+```
+docker compose down
+```
+
+In the compose file, add these lines to the 'tbmq' portion:
+
+```
+      SECURITY_MQTT_BASIC_ENABLED: "true"
+      LISTENER_SSL_BIND_PORT: "8883"
+
+      SSL_NETTY_MAX_PAYLOAD_SIZE: 600000
+      TCP_NETTY_MAX_PAYLOAD_SIZE: 600000
+
+      LISTENER_SSL_ENABLED: "true"
+      LISTENER_SSL_CREDENTIALS_TYPE: "PEM"
+      LISTENER_SSL_PEM_CERT: "/config/certificates/server.pem"
+      LISTENER_SSL_PEM_KEY: "/config/certificates/server.key"
+      LISTENER_SSL_PEM_KEY_PASSWORD: ""
+```
+In the "volumes:" tab under the tbmq portion, ensure that you are also mounting the "certs" folder we made with the server.key and server.pem so that tbmq doc>
+
+```
+- /home/<user>/certs:/config/certificates
+```
+
+Also ensure that under the 'ports' portion of the tbmq lines have a mapping for 8883:8883
+
+```
+docker compose up -d
+```
+
+Give your docker container permission to read server certificates 
+```
+sudo chmod 644 server.pem
+sudo chmod 644 server.key
+```
+
+### TBMQ UI Configuration
+Add credientials for both NodeRed and end-device  
+
+Authentication -> Credentials
+- Name: anything
+- Client Type: Application for Nodered, Device for end-device
+- Credentials Type: X.509 Certificate Chain
+- Certificate Common Name: The exact one you gave it when you created .csr
+- Everything else blank
+Authentication -> Providers
+- Toggle X.509 Certificate Chain to Active
+
+### NodeRed Configuration
+For your mqtt broker node:
+- Name: anything
+Connection
+- Server: ip address of your broker, port 8883
+- connect automatically, use TLS (add TLS config)
+- Protocol: MQTT V3.1.1
+TLS Config
+- You can either use key/certs from local files or upload
+- Upload your `nodered.key`, `nodered.crt`, `rootCA.pem`
+
+Leave the rest as is and click update and deploy. 
+
+### Debugging
+If the connection cannot be established for some reason, run the following on your end-device:
+```
+openssl s_client -connect <broker-ip>:8883 -CAfile <ca file name>
+```
+- Check if the CNs of the server and rootCA is the same as what you put
+- Check the return code at the very bottom
+
+If the CNs do not match what you put, it is likely that the Docker is holding on to cached copies of old certificates. To remove them: 
+```
+docker compose down -v
+docker container prune -f
+sudo chmod 644 server.pem
+sudo chmod 644 server.key
+docker compose up -d
+```
