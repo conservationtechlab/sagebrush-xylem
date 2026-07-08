@@ -23,7 +23,7 @@ sudo apt install postgresql postgresql-contrib -y
 Load the schema dump with `psql`, replace [INFO] with your values:
 
 ```bash
-psql -h [HOSTNAME] -U [USER] -d [SAGEBASE] -f schema_only.sql
+psql -h <HOSTNAME> -U <USER> -d <SAGEBASE> -f schema_only.sql
 ```
 
 `psql -f` executes the SQL commands in the file against the target database.

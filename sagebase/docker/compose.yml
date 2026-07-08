@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - /home/user/dockers/postgresql/db/:/var/lib/postgresql
+      - /home/<user>/dockers/postgresql/db/:/var/lib/postgresql
 
       # SECURE -->
       - ./secrets/pg-entrypoint.sh:/pg-entrypoint.sh:ro
@@ -23,14 +23,14 @@ services:
 
       # SECURE -->
       # these are paths INSIDE the container
-      POSTGRES_USER_FILE: /run/secrets/pg_user
-      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
-      POSTGRES_DB_FILE: /run/secrets/pg_db
+      POSTGRES_USER_FILE: /run/secrets/postgres_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB_FILE: /run/secrets/postgres_db
       # <--
       
       # INSECURE -->
-      ## POSTGRES_USER: user
-      ## POSTGRES_PASSWORD: changeme
+      ## POSTGRES_USER: <user>
+      ## POSTGRES_PASSWORD: <changeme>
       ## POSTGRES_DB: sagebase
       # <--
 
