@@ -1,4 +1,4 @@
-# sagebrush_software
+# sagebrush-xylem
 Code associated with the SageBRUSH project.
 
 There is an associated [sagebrush-cellulose](https://github.com/conservationtechlab/sagebrush-cellulose)
