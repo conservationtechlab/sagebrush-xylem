@@ -139,7 +139,6 @@ CREATE TABLE public.event (
     start_time timestamp without time zone,
     end_time timestamp without time zone,
     duration numeric,
-    event_timestamp timestamp without time zone,
     deployment_id uuid,
     media_id uuid
 );
@@ -183,7 +182,7 @@ CREATE TABLE public.occurrence (
     validator_id character varying,
     annotation character varying,
     occurrence_id character varying NOT NULL,
-    occurrence_timestamp timestamp without time zone,
+    occurrence_time timestamp without time zone,
     media_id uuid
 );
 
@@ -204,7 +203,7 @@ CREATE TABLE public.person (
 --
 
 CREATE TABLE public.sensor_measure (
-    recorded_at timestamp without time zone NOT NULL,
+    recorded_time timestamp without time zone NOT NULL,
     measure_name character varying NOT NULL,
     measure_value double precision NOT NULL,
     event_id character varying,
