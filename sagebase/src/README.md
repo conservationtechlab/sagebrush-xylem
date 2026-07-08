@@ -58,6 +58,8 @@ Example \dt:
 |---|---|---|---|  
 | public  | annotation  | table  | sage_user  |  
 | public  | class  | table  | sage_user  |  
+| public  | ...  | table  | sage_user  |  
+| public  | uom  | table  | sage_user  |  
 
 ## Common issues
 
