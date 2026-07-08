@@ -59,14 +59,13 @@ file_env POSTGRES_USER
 file_env POSTGRES_PASSWORD
 file_env POSTGRES_DB
 
-exec docker-entrypoint.sh postgres
+exec /usr/local/bin/docker-entrypoint.sh postgres
 ```
 
 Then make it executable and ensure not world-readable:
 
 ```bash
-chmod 700 secrets/pg-entrypoint.sh
-chmod 700 secrets
+chmod 700 -R secrets
 chmod 600 secrets/*.txt
 ```
 
