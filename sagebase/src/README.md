@@ -51,6 +51,7 @@ Then inside `psql`:
 \dv
 ```
 
+
 | Schema | List of relations name | Type | Owner | 
 |---|---|---|---|---| 
 | public | annotation | table | sage_user | 
