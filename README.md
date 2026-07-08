@@ -14,7 +14,7 @@ we use to parse and transfer those data streams into SageBase.
 
 ## SageBase 
 
-![SageBase ERD](images/SageBase_v0.7.5.png)
+![SageBase ERD](assets/SageBase.png)
 
 ## LoRa pipeline
 
