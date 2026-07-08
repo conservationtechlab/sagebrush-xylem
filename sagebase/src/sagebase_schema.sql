@@ -51,7 +51,7 @@ CREATE TABLE public.__diesel_schema_migrations (
 
 CREATE TABLE public.annotation (
     annotation_id character varying NOT NULL,
-    "timestamp" timestamp without time zone,
+    annotation_time timestamp without time zone,
     detection_id character varying,
     annotator_id character varying
 );
@@ -65,13 +65,13 @@ CREATE TABLE public.class (
     class_id character varying NOT NULL,
     class_type character varying,
     common_name character varying,
-    kingdom character varying,
-    phylum character varying,
-    class character varying,
-    "order" character varying,
-    family character varying,
-    genus character varying,
-    species character varying
+    tax_kingdom character varying,
+    tax_phylum character varying,
+    tax_class character varying,
+    tax_order character varying,
+    tax_family character varying,
+    tax_genus character varying,
+    tax_species character varying
 );
 
 
@@ -136,31 +136,14 @@ CREATE TABLE public.device_type (
 CREATE TABLE public.event (
     event_id character varying NOT NULL,
     type character varying,
-    filepath character varying,
     start_time timestamp without time zone,
     end_time timestamp without time zone,
     duration numeric,
-    samplerate integer,
-    bitrate integer,
-    "timestamp" timestamp without time zone,
+    event_timestamp timestamp without time zone,
     deployment_id uuid,
     media_id uuid
 );
 
-
---
--- Name: field_sensor_data; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.field_sensor_data (
-    recorded_at timestamp without time zone NOT NULL,
-    ext_temperature double precision,
-    humidity double precision,
-    bat_v double precision,
-    int_temperature double precision,
-    event_id character varying,
-    fsd_id uuid DEFAULT gen_random_uuid() NOT NULL
-);
 
 
 --
@@ -169,6 +152,9 @@ CREATE TABLE public.field_sensor_data (
 
 CREATE TABLE public.media (
     media_id uuid DEFAULT uuidv7() NOT NULL,
+    media_type character varying,
+    bitrate integer,
+    samplerate integer,
     uri character varying(500) NOT NULL
 );
 
@@ -197,7 +183,7 @@ CREATE TABLE public.occurrence (
     validator_id character varying,
     annotation character varying,
     occurrence_id character varying NOT NULL,
-    "timestamp" timestamp without time zone,
+    occurrence_timestamp timestamp without time zone,
     media_id uuid
 );
 
@@ -246,66 +232,6 @@ CREATE TABLE public.uom (
     measure_name character varying NOT NULL,
     unit_of_measure character varying
 );
-
-
---
--- Name: v_field_sensor_lat_long; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.v_field_sensor_lat_long AS
- SELECT v.device_name,
-    v.device_id,
-    f.recorded_at,
-    f.humidity,
-    f.bat_v,
-    COALESCE(f.ext_temperature, f.int_temperature) AS temperature,
-    d.lat AS latitude,
-    d.lon AS longitude,
-    d.deployment_id
-   FROM (((public.event e
-     JOIN public.field_sensor_data f ON (((e.event_id)::text = (f.event_id)::text)))
-     RIGHT JOIN public.deployment d ON (((e.deployment_id)::text = (d.deployment_id)::text)))
-     RIGHT JOIN public.device v ON (((d.device_id)::text = (v.device_id)::text)));
-
-
---
--- Name: v_field_sensor_lat_long_last_dt; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW public.v_field_sensor_lat_long_last_dt AS
- WITH mn AS (
-         SELECT v.device_name,
-            v.device_id,
-            f.recorded_at,
-            f.humidity,
-            f.bat_v,
-            COALESCE(f.ext_temperature, f.int_temperature) AS temperature,
-            d.lat AS latitude,
-            d.lon AS longitude,
-            e.deployment_id
-           FROM (((public.event e
-             JOIN public.field_sensor_data f ON (((e.event_id)::text = (f.event_id)::text)))
-             RIGHT JOIN public.deployment d ON (((e.deployment_id)::text = (d.deployment_id)::text)))
-             RIGHT JOIN public.device v ON (((d.device_id)::text = (v.device_id)::text)))
-          WHERE (e.deployment_id IS NOT NULL)
-        ), mx_dt AS (
-         SELECT mn_1.deployment_id,
-            max(mn_1.recorded_at) AS last_recording_dt
-           FROM mn mn_1
-          GROUP BY mn_1.deployment_id
-        )
- SELECT mn.device_name,
-    mn.device_id,
-    mn.recorded_at,
-    mn.humidity,
-    mn.bat_v,
-    mn.temperature,
-    mn.latitude,
-    mn.longitude,
-    mn.deployment_id
-   FROM (mn
-     JOIN mx_dt ON ((((mn.deployment_id)::text = (mx_dt.deployment_id)::text) AND (mn.recorded_at = mx_dt.last_recording_dt))));
-
 
 --
 -- Name: v_sensor_measure_air_lat_lon_90day; Type: VIEW; Schema: public; Owner: -
@@ -558,11 +484,11 @@ ALTER TABLE ONLY public.annotation
 
 
 --
--- Name: deployment deployment_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: deployment deployment_pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.deployment
-    ADD CONSTRAINT deployment_pkey PRIMARY KEY (deployment_id);
+    ADD CONSTRAINT deployment_pk PRIMARY KEY (deployment_id);
 
 
 --
@@ -598,19 +524,11 @@ ALTER TABLE ONLY public.event
 
 
 --
--- Name: field_sensor_data field_sensor_data_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.field_sensor_data
-    ADD CONSTRAINT field_sensor_data_pkey PRIMARY KEY (fsd_id);
-
-
---
--- Name: media media_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: media media_pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.media
-    ADD CONSTRAINT media_pkey PRIMARY KEY (media_id);
+    ADD CONSTRAINT media_pk PRIMARY KEY (media_id);
 
 
 --
@@ -638,11 +556,11 @@ ALTER TABLE ONLY public.device
 
 
 --
--- Name: sensor_measure sensor_measure_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: sensor_measure sensor_measure_pk; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.sensor_measure
-    ADD CONSTRAINT sensor_measure_pkey PRIMARY KEY (measure_id);
+    ADD CONSTRAINT sensor_measure_pk PRIMARY KEY (measure_id);
 
 
 --
@@ -750,11 +668,11 @@ ALTER TABLE ONLY public.device
 
 
 --
--- Name: event event_deployment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: event event_deployment_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.event
-    ADD CONSTRAINT event_deployment_id_fkey FOREIGN KEY (deployment_id) REFERENCES public.deployment(deployment_id);
+    ADD CONSTRAINT event_deployment_id_fk FOREIGN KEY (deployment_id) REFERENCES public.deployment(deployment_id);
 
 
 --
@@ -787,6 +705,14 @@ ALTER TABLE ONLY public.occurrence
 
 ALTER TABLE ONLY public.sensor_measure
     ADD CONSTRAINT sensor_measure_event_fk FOREIGN KEY (event_id) REFERENCES public.event(event_id);
+
+--
+-- Name:  sensor_measure sensor_measure_uom_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_measure
+    ADD CONSTRAINT sensor_measure_uom_fk FOREIGN KEY (measure_name) REFERENCES public.uom(measure_name);
+
 
 
 --
