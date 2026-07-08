@@ -52,11 +52,11 @@ Then inside `psql`:
 ```
 
 
-| Schema | List of relations name | Type | Owner | 
-|---|---|---|---|---| 
-| public | annotation | table | sage_user | 
-| public | class | table | sage_user | 
 
+| Schema  | List of relations name   | Type  | Owner  |
+|---|---|---|---|---|
+| public  | annotation  | table  | sage_user  |
+| public  | class  | table  | sage_user  |
 
 ## Common issues
 
