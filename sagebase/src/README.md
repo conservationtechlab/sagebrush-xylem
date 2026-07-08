@@ -35,7 +35,6 @@ psql -h <HOSTNAME> -U <USER> -d <SAGEBASE> -f schema_only.sql
 3. Check for errors, especially extension, role, or schema conflicts.
 4. Verify the objects loaded correctly with `\dt` to show tables, `\dv` views, and `\dn` schemas
 inside `psql`.
-
 Example:
 
 ```bash
@@ -51,6 +50,12 @@ Then inside `psql`:
 \dt
 \dv
 ```
+
+| Schema | List of relations name | Type | Owner |
+|---|---|---|---|---|
+| public | annotation | table | sage_user |
+| public | class | table | sage_user |
+
 
 ## Common issues
 
