@@ -83,7 +83,6 @@ docker compose ps
 docker compose logs -f postgres
 ```
 
-Stop or restart
 Stop the stack with:
 
 ```bash
