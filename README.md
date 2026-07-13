@@ -16,6 +16,9 @@ we use to parse and transfer those data streams into SageBase.
 
 ![SageBase ERD](assets/SageBase.png)
 
+The sagebase folder includes a dictionary folder to review data model information, a docker folder 
+to run the database container, and a src folder to load the database schema.
+
 ## LoRa pipeline
 
 The LoRa pipeline folder contains an example workflow for setting up
