@@ -1,6 +1,6 @@
 site_name: SageBase Data Model
 site_description: Data model for SageBRUSH platform field observation data managed by the Conservation Technology Lab at the San Diego Zoo Wildlife Alliance.
-site_url: 
+site_url: https://conservationtechlab.github.io/sagebrush-xylem/
 
 theme:
   name: material
