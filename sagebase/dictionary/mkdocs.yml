@@ -1,0 +1,60 @@
+site_name: SageBase Data Model
+site_description: Data model for SageBRUSH platform field observation data managed by the Conservation Technology Lab at the San Diego Zoo Wildlife Alliance.
+site_url: https://conservationtechlab.github.io/sagebrush-xylem/
+
+theme:
+  name: material
+  logo: assets/SAGE.png
+  palette:
+    primary: custom
+    accent: custom
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Data Model Overview: data-model-overview.md
+  - Tables:
+    - annotation: tables/annotation.md
+    - class: tables/class.md
+    - deployment: tables/deployment.md
+    - device: tables/device.md
+    - device_class: tables/device_class.md
+    - device_type: tables/device_type.md
+    - event: tables/event.md
+    - media: tables/media.md
+    - model: tables/model.md
+    - occurrence: tables/occurrence.md
+    - person: tables/person.md
+    - sensor_measure: tables/sensor_measure.md
+    - site: tables/site.md
+    - uom: tables/uom.md
+
+extra_css:
+  - stylesheets/schema.css
+
+extra_javascript:
+  - path: javascripts/schema.js
+    defer: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_div_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
