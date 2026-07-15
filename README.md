@@ -5,10 +5,6 @@ There is an associated [sagebrush-cellulose](https://github.com/conservationtech
 repository that contains relevant hardware build information for SageBRUSH stations
 that collect various data. 
 
-There is also an associated [sagebrush-canopy](https://github.com/conservationtechlab/sagebrush-canopy)
-repository that contains relevant front-end builds for visualizing the various data
-collected.
-
 This repo contains SageBase set-up and schema information, as well as the processes
 we use to parse and transfer those data streams into SageBase. 
 
