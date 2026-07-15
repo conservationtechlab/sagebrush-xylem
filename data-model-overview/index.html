@@ -1,0 +1,1362 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Data model for SageBRUSH platform field observation data managed by the Conservation Technology Lab at the San Diego Zoo Wildlife Alliance.">
+      
+      
+      
+        <link rel="canonical" href="https://conservationtechlab.github.io/sagebrush-xylem/data-model-overview/">
+      
+      
+        <link rel="prev" href="..">
+      
+      
+        <link rel="next" href="../tables/annotation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Data Model Overview - SageBase Data Model</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/schema.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#data-model-overview" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="SageBase Data Model" class="md-header__button md-logo" aria-label="SageBase Data Model" data-md-component="logo">
+      
+  <img src="../assets/SAGE.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SageBase Data Model
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Data Model Overview
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Data Model Overview
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../tables/annotation/" class="md-tabs__link">
+          
+  
+  
+  Tables
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SageBase Data Model" class="md-nav__button md-logo" aria-label="SageBase Data Model" data-md-component="logo">
+      
+  <img src="../assets/SAGE.png" alt="logo">
+
+    </a>
+    SageBase Data Model
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Model Overview
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data Model Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationships
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tables
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tables
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/annotation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    annotation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/class/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    class
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/device/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    device
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/device_class/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    device_class
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/device_type/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    device_type
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/event/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    event
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/media/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    media
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/occurrence/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    occurrence
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/person/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    person
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/sensor_measure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    sensor_measure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    site
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tables/uom/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    uom
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="data-model-overview">Data Model Overview<a class="headerlink" href="#data-model-overview" title="Permanent link">&para;</a></h1>
+<p>The diagram shows all five tables, their columns, and foreign-key relationships. Click a table name to open its full documentation.</p>
+<div class="schema-diagram-root">
+  <div id="diagram-wrapper">
+    <div id="tables-grid">
+
+      <div class="schema-column">
+
+        <div class="schema-table schema-table--project schema-table--deployment" id="table-deployment">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/deployment/">deployment</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-deployment-deployment_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>deployment_id</span></div>
+            <div class="schema-field" id="field-deployment-site_id"><span class="schema-field-content">site_id</span></div>
+            <div class="schema-field" id="field-deployment-device_id"><span class="schema-field-content">device_id</span></div>
+            <div class="schema-field" id="field-deployment-start_date"><span class="schema-field-content">start_date</span></div>
+            <div class="schema-field" id="field-deployment-end_date"><span class="schema-field-content">end_date</span></div>
+            <div class="schema-field" id="field-deployment-deployed_by"><span class="schema-field-content">deployed_by</span></div>
+            <div class="schema-field" id="field-deployment-note"><span class="schema-field-content">note</span></div>
+            <div class="schema-field" id="field-deployment-lat"><span class="schema-field-content">lat</span></div>
+            <div class="schema-field" id="field-deployment-long"><span class="schema-field-content">long</span></div>
+            <div class="schema-field" id="field-deployment-geom"><span class="schema-field-content">geom</span></div>
+            <div class="schema-field" id="field-deployment-elevation"><span class="schema-field-content">elevation</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--project schema-table--site" id="table-site">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/site/">site</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-site-site_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>site_id</span></div>
+            <div class="schema-field" id="field-site-site_code"><span class="schema-field-content">site_code</span></div>
+            <div class="schema-field" id="field-site-geom"><span class="schema-field-content">geom</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--infrastructure schema-table--device" id="table-device">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/device/">device</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-device-device_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>device_id</span></div>
+            <div class="schema-field" id="field-device-serial_number"><span class="schema-field-content">serial_number</span></div>
+            <div class="schema-field" id="field-device-device_type_id"><span class="schema-field-content">device_type_id</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--infrastructure schema-table--device_type" id="table-device_type">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/device_type/">device_type</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-device_type-device_type_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>device_type_id</span></div>
+            <div class="schema-field" id="field-device_type-brand"><span class="schema-field-content">brand</span></div>
+            <div class="schema-field" id="field-device_type-model"><span class="schema-field-content">model</span></div>
+            <div class="schema-field" id="field-device_type-code"><span class="schema-field-content">code</span></div>
+            <div class="schema-field" id="field-device_type-device_class_id"><span class="schema-field-content">device_class_id</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--infrastructure schema-table--device_class" id="table-device_class">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/device_class/">device_class</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-device_class-device_class_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>device_class_id</span></div>
+            <div class="schema-field" id="field-device_class-device_class"><span class="schema-field-content">device_class</span></div>
+          </div>
+        </div>
+
+
+      </div>
+
+      <div class="schema-column">
+
+        <div class="schema-table schema-table--primary schema-table--event" id="table-event">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/event/">event</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-event-event_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>event_id</span></div>
+            <div class="schema-field" id="field-event-type"><span class="schema-field-content">type</span></div>
+            <div class="schema-field" id="field-event-start_time"><span class="schema-field-content">start_time</span></div>
+            <div class="schema-field" id="field-event-end_time"><span class="schema-field-content">end_time</span></div>
+            <div class="schema-field" id="field-event-duration"><span class="schema-field-content">duration</span></div>
+            <div class="schema-field" id="field-event-deployment_id"><span class="schema-field-content">deployment_id</span></div>
+            <div class="schema-field" id="field-event-media_id"><span class="schema-field-content">media_id</span></div>
+          </div>
+        </div>
+
+
+        <div class="schema-table schema-table--event schema-table--occurrence" id="table-occurrence">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/occurrence/">occurrence</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-occurrence-occurrence_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>occurrence_id</span></div>
+            <div class="schema-field" id="field-occurrence-event_id"><span class="schema-field-content">event_id</span></div>
+            <div class="schema-field" id="field-occurrence-model_id"><span class="schema-field-content">model_id</span></div>
+            <div class="schema-field" id="field-occurrence-class_id"><span class="schema-field-content">class_id</span></div>
+            <div class="schema-field" id="field-occurrence-confidence"><span class="schema-field-content">confidence</span></div>
+            <div class="schema-field" id="field-occurrence-validator_id"><span class="schema-field-content">validator_id</span></div>
+            <div class="schema-field" id="field-occurrence-annotation_id"><span class="schema-field-content">annotation_id</span></div>
+            <div class="schema-field" id="field-occurrence-occurrence_time"><span class="schema-field-content">occurrence_time</span></div>
+            <div class="schema-field" id="field-occurrence-media_id"><span class="schema-field-content">media_id</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--event schema-table--media" id="table-media">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/media/">media</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-media-media_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>media_id</span></div>
+            <div class="schema-field" id="field-media-media_type"><span class="schema-field-content">media_type</span></div>
+            <div class="schema-field" id="field-media-bitrate"><span class="schema-field-content">bitrate</span></div>
+            <div class="schema-field" id="field-media-samplerate"><span class="schema-field-content">samplerate</span></div>
+            <div class="schema-field" id="field-media-uri"><span class="schema-field-content">uri</span></div>
+          </div>
+        </div>
+
+
+         <div class="schema-table schema-table--event schema-table--sensor_measure" id="table-sensor_measure">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/sensor_measure/">sensor_measure</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-sensor_measure-measure_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>measure_id</span></div>
+            <div class="schema-field" id="field-sensor_measure-recorded_time"><span class="schema-field-content">recorded_time</span></div>
+            <div class="schema-field" id="field-sensor_measure-masure_name"><span class="schema-field-content">masure_name</span></div>
+            <div class="schema-field" id="field-sensor_measure-measure_value"><span class="schema-field-content">measure_value</span></div>
+            <div class="schema-field" id="field-sensor_measure-event_id"><span class="schema-field-content">event_id</span></div>
+          </div>
+        </div>
+
+
+      </div>
+
+
+      <div class="schema-column">
+
+
+        <div class="schema-table schema-table--context schema-table--class" id="table-class">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/class/">class</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-class-class_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>class_id</span></div>
+            <div class="schema-field" id="field-class-class_type"><span class="schema-field-content">class_type</span></div>
+            <div class="schema-field" id="field-class-common_name"><span class="schema-field-content">common_name</span></div>
+            <div class="schema-field" id="field-class-kingdom"><span class="schema-field-content">tax_kingdom</span></div>
+            <div class="schema-field" id="field-class-phylum"><span class="schema-field-content">tax_phylum</span></div>
+            <div class="schema-field" id="field-class-class"><span class="schema-field-content">tax_class</span></div>
+            <div class="schema-field" id="field-class-order"><span class="schema-field-content">tax_order</span></div>
+            <div class="schema-field" id="field-class-family"><span class="schema-field-content">tax_family</span></div>
+            <div class="schema-field" id="field-class-genus"><span class="schema-field-content">tax_genus</span></div>
+            <div class="schema-field" id="field-class-species"><span class="schema-field-content">tax_species</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--context schema-table--person" id="table-person">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/person/">person</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-person-person_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>person_id</span></div>
+            <div class="schema-field" id="field-person-name"><span class="schema-field-content">name</span></div>
+            <div class="schema-field" id="field-person-email"><span class="schema-field-content">email</span></div>
+          </div>
+        </div>
+
+        <div class="schema-table schema-table--context schema-table--model" id="table-model">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/model/">model</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-model-model_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>model_id</span></div>
+            <div class="schema-field" id="field-model-name"><span class="schema-field-content">name</span></div>
+            <div class="schema-field" id="field-model-type"><span class="schema-field-content">type</span></div>
+            <div class="schema-field" id="field-model-url"><span class="schema-field-content">url</span></div>
+          </div>
+        </div>
+
+
+        <div class="schema-table schema-table--context schema-table--annotation" id="table-annotation">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/annotation/">annotation</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-annotation-annotation_id"><span class="schema-field-content"><span class="schema-pk-icon"></span>annotation_id</span></div>
+            <div class="schema-field" id="field-annotation-timestamp"><span class="schema-field-content">timestamp</span></div>
+            <div class="schema-field" id="field-annotation-annotator_id"><span class="schema-field-content">annotator_id</span></div>
+          </div>
+        </div>
+
+         <div class="schema-table schema-table--context schema-table--uom" id="table-uom">
+          <h3 class="schema-title">
+            <a class="schema-title-content" href="../tables/uom/">uom</a>
+          </h3>
+          <div class="schema-fields">
+            <div class="schema-field" id="field-uom-measure_name"><span class="schema-field-content"><span class="schema-pk-icon"></span>measure_name</span></div>
+            <div class="schema-field" id="field-uom-unit_of_measure"><span class="schema-field-content">unit_of_measure</span></div>
+          </div>
+
+        </div>
+
+      </div>
+
+
+    </div><!-- #tables-grid -->
+    <svg id="connector-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div><!-- #diagram-wrapper -->
+
+  <div class="legend-box">
+    <p class="legend-title">Legend</p>
+    <div class="legend-items">
+    <span class="legend-item">
+        <span class="legend-swatch legend-swatch--project"></span>
+        <span class="legend-label">Project</span>
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch legend-swatch--infrastructure"></span>
+        <span class="legend-label">Infrastructure</span>
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch legend-swatch--event"></span>
+        <span class="legend-label">Event</span>
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch legend-swatch--context"></span>
+        <span class="legend-label">Context</span>
+      </span>
+      <span class="legend-item">
+        <span class="legend-token legend-token--pk">
+          <svg class="legend-key-icon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M3.5 11.5a3.5 3.5 0 1 1 3.163-5H14L15.5 8 14 9.5l-1-1-1 1-1-1-1 1-1-1-1.837 1.837A3.5 3.5 0 0 1 3.5 11.5zm-1-4a1 1 0 1 0 2 0 1 1 0 0 0-2 0z"/>
+          </svg>
+        </span>
+        <span class="legend-label">Primary key</span>
+      </span>
+      <span class="legend-item">
+        <span style="display:inline-block;width:44px;border-top:2.5px solid var(--line-color)"></span>
+        <span class="legend-label">Foreign key relationship</span>
+      </span>
+
+    </div>
+  </div>
+</div>
+
+<h2 id="relationships">Relationships<a class="headerlink" href="#relationships" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>FK Table</th>
+<th>FK Column</th>
+<th>References Table</th>
+<th>PK Column</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sensor_measure</code></td>
+<td><code>masure_name</code></td>
+<td><code>uom</code></td>
+<td><code>measure_name</code></td>
+</tr>
+<tr>
+<td><code>sensor_measure</code></td>
+<td><code>event_id</code></td>
+<td><code>event</code></td>
+<td><code>event_id</code></td>
+</tr>
+<tr>
+<td><code>occurrence</code></td>
+<td><code>validator_id</code></td>
+<td><code>person</code></td>
+<td><code>person_id</code></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td><code>deployment_id</code></td>
+<td><code>deployment</code></td>
+<td><code>deployment_id</code></td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td><code>media_id</code></td>
+<td><code>media</code></td>
+<td><code>media_id</code></td>
+</tr>
+<tr>
+<td><code>annotation</code></td>
+<td><code>annotator_id</code></td>
+<td><code>person</code></td>
+<td><code>person_id</code></td>
+</tr>
+<tr>
+<td><code>deployment</code></td>
+<td><code>site_id</code></td>
+<td><code>site</code></td>
+<td><code>site_id</code></td>
+</tr>
+<tr>
+<td><code>deployment</code></td>
+<td><code>device_id</code></td>
+<td><code>device</code></td>
+<td><code>device_id</code></td>
+</tr>
+<tr>
+<td><code>device</code></td>
+<td><code>device_type_id</code></td>
+<td><code>device_type</code></td>
+<td><code>device_type_id</code></td>
+</tr>
+<tr>
+<td><code>device_type</code></td>
+<td><code>device_class_id</code></td>
+<td><code>device_class</code></td>
+<td><code>device_class_id</code></td>
+</tr>
+<tr>
+<td><code>occurrence</code></td>
+<td><code>event_id</code></td>
+<td><code>event</code></td>
+<td><code>event_id</code></td>
+</tr>
+<tr>
+<td><code>occurrence</code></td>
+<td><code>model_id</code></td>
+<td><code>model</code></td>
+<td><code>model_id</code></td>
+</tr>
+<tr>
+<td><code>occurrence</code></td>
+<td><code>class_id</code></td>
+<td><code>class</code></td>
+<td><code>class_id</code></td>
+</tr>
+<tr>
+<td><code>annotation</code></td>
+<td><code>annotation_id</code></td>
+<td><code>occurrence</code></td>
+<td><code>annotation_id</code></td>
+</tr>
+<tr>
+<td><code>media</code></td>
+<td><code>media_id</code></td>
+<td><code>occurrence</code></td>
+<td><code>media_id</code></td>
+</tr>
+<tr>
+<td>## Table Pages</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Columns</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../tables/annotation/">annotation</a></td>
+<td>3</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/class/">class</a></td>
+<td>10</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/deployment/">deployment</a></td>
+<td>10</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/device/">device</a></td>
+<td>3</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/device_class/">device_class</a></td>
+<td>2</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/device_type/">device_type</a></td>
+<td>5</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/event/">event</a></td>
+<td>7</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/media/">media</a></td>
+<td>5</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/model/">model</a></td>
+<td>4</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/occurrence/">occurrence</a></td>
+<td>9</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/person/">person</a></td>
+<td>3</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/sensor_measure/">sensor_measure</a></td>
+<td>5</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/site/">site</a></td>
+<td>3</td>
+<td></td>
+</tr>
+<tr>
+<td><a href="../tables/uom/">uom</a></td>
+<td>2</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "toc.integrate", "search.suggest", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/schema.js" defer></script>
+      
+    
+  </body>
+</html>
