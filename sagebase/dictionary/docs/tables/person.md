@@ -1,14 +1,18 @@
 # person
 
+Person table.
+
 ## Columns
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `person_id` | uuid | **PK**, required |  |
-| `name` | string | required |  |
-| `email` | string |  |  |
+| `person_id` | uuid | **PK**, required | Unique identifier of person |
+| `name` | string | required | Name of person |
+| `email` | string |  | email of person |
+
+**PK** - Primary Key  
 
 ## Relations
 
-- Referenced by [`annotation.annotator_id`](annotation.md)
-- Referenced by [`occurrence.validator_id`](occurrence.md)
+- [`annotation.annotator_id`](annotation.md) => person_id
+- [`occurrence.validator_id`](occurrence.md) => person_id
