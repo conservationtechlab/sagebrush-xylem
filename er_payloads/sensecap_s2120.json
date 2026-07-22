@@ -1,0 +1,60 @@
+{
+    "location": {
+        "longitude": 0,
+        "latitude": 0 },
+    "recorded_at": "{{global.time}}",
+    "source": "<UNIQUE SOURCE ID>",
+    "device_status_properties":[ 
+        {"value": {{payload.messages.0.0.measurementValue}},
+        "label": "air_temperature",
+        "units": "C"
+        },
+        {"value": {{payload.messages.0.1.measurementValue}},
+        "label": "air_humidity",
+        "units": "%"
+        },
+        {"value": {{payload.messages.0.2.measurementValue}},
+        "label": "light_intensity",
+        "units": "lux"
+        },
+        {"value": {{payload.messages.0.3.measurementValue}},
+        "label": "uv_index",
+        "units":""
+        },
+        {"value": {{payload.messages.0.4.measurementValue}},
+        "label": "wind_speed",
+        "units": "m/s"
+        },
+        {"value": {{payload.messages.1.0.measurementValue}},
+        "label": "wind_direction",
+        "units": "degrees"
+        },
+        {"value": {{payload.messages.1.1.measurementValue}},
+        "label": "rainfall_intensity",
+        "units": "mm/h"
+        },
+        {"value": {{payload.messages.1.2.measurementValue}},
+        "label": "barometric_pressure",
+        "units": "Pa"
+        },
+        {"value": {{payload.messages.2.0.measurementValue}},
+        "label": "peak_wind_gust",
+        "units": "m/s"
+        },
+        {"value": {{payload.messages.2.0.measurementValue}},
+        "label": "rainfall_last_10_mins",
+        "units": "mm"
+        } ],
+    "additional":{
+        "air_temperature": {{payload.messages.0.0.measurementValue}},
+        "air_humidity": {{payload.messages.0.1.measurementValue}},
+        "light_intensity": {{payload.messages.0.2.measurementValue}},
+        "uv_index": {{payload.messages.0.3.measurementValue}},
+        "wind_speed": {{payload.messages.0.4.measurementValue}},
+        "wind_direction": {{payload.messages.1.0.measurementValue}},
+        "rainfall_intensity": {{payload.messages.1.1.measurementValue}},
+        "barometric_pressure": {{payload.messages.1.2.measurementValue}},
+        "peak_wind_gust": {{payload.messages.2.0.measurementValue}},
+        "rainfall_last_10_mins": {{payload.messages.2.1.measurementValue}}   
+         }
+}

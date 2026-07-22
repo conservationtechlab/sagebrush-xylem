@@ -1,0 +1,30 @@
+{
+    "location": {
+        "longitude": 0,
+        "latitude": 0 },
+    "recorded_at": "{{payload.received_at}}",
+    "source": "<UNIQUE SOURCE ID>",
+    "device_status_properties":[ 
+        {"value": {{payload.uplink_message.decoded_payload.TempC_SHT}},
+        "label": "int_temperature",
+        "units": "C"
+        },
+        {"value": {{payload.uplink_message.decoded_payload.TempC_DS}},
+        "label": "ext_temperature",
+        "units": "C"
+        },
+        {"value": {{payload.uplink_message.decoded_payload.Hum_SHT}},
+        "label": "humidity",
+        "units": "%"
+        },
+        {"value": {{payload.uplink_message.decoded_payload.BatV}},
+        "label": "bat_stat",
+        "units":"V"
+        } ],
+    "additional":{
+        "int_temperature": {{payload.uplink_message.decoded_payload.TempC_SHT}},
+        "ext_temperature": {{payload.uplink_message.decoded_payload.TempC_DS}},
+        "humidity": {{payload.uplink_message.decoded_payload.Hum_SHT}},
+        "bat_stat": {{payload.uplink_message.decoded_payload.BatV}}
+    }
+}

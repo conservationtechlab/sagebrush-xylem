@@ -1,0 +1,30 @@
+{
+    "location": {
+        "longitude": 0,
+        "latitude": 0 },
+    "recorded_at": "{{global.time}}",
+    "source": "<UNIQUE SOURCE ID>",
+    "device_status_properties":[ 
+        {"value": {{payload.BatV}},
+        "label": "battery",
+        "units": "V"
+        },
+        {"value": {{payload.water_SOIL}},
+        "label": "water_soil",
+        "units": "cm3/cm3"
+        },
+        {"value": {{payload.conduct_SOIL}},
+        "label": "conduct_soil",
+        "units": "uS/cm"
+        },
+        {"value": {{payload.temp_SOIL}},
+        "label": "soil_temp",
+        "units":"C"
+        } ],
+    "additional":{
+        "battery": {{payload.BatV}},
+        "water_soil": {{payload.water_SOIL}},
+        "conduct_soil": {{payload.conduct_SOIL}},
+        "soil_temp": {{payload.temp_SOIL}}
+    }
+}
