@@ -219,7 +219,12 @@ Move `server.pem` and `server.key` into `/home/user/certs` on the TBMQ machine
 **Client certificates**
 
 This will basically be the same as that of server, but no need for sAN because it's outbound!
+
 Do this for both NodeRed and end-device!
+
+**`Client` is just an example name. If you create a second device, it needs to be called something else with a unique CN.**  
+The best way is to use a UUID string name for the `.key`, `.crt`, and CN, that way it is easier to keep track.   
+All clients and subscribing servers need to be signed by the same root certificate!  
 
 ```
 openssl genrsa -out client.key 2048
@@ -270,29 +275,22 @@ sudo chmod 644 server.key
 ```
 
 ### TBMQ UI Configuration
-Add credientials for both NodeRed and end-device  
+Add credientials for both NodeRed and end-device
 
-Authentication -> Credentials
-- Name: anything
-- Client Type: Application for Nodered, Device for end-device
-- Credentials Type: X.509 Certificate Chain
-- Certificate Common Name: The exact one you gave it when you created .csr
-- Everything else blank
-Authentication -> Providers
-- Toggle X.509 Certificate Chain to Active
+Client Credentials:  
+Authentication -> Credentials  
+![TBMQ MTLS Client Auth](images/tbmq-mtls-client-auth.png)
+
+X-509 Toggle:  
+Authentication -> Providers  
+![TBMQ X509 Auth](images/tbmq-x509-auth.png)
 
 ### NodeRed Configuration
-For your mqtt broker node:
-- Name: anything
-Connection
-- Server: ip address of your broker, port 8883
-- connect automatically, use TLS (add TLS config)
-- Protocol: MQTT V3.1.1
-TLS Config
-- You can either use key/certs from local files or upload
-- Upload your `nodered.key`, `nodered.crt`, `rootCA.pem`
+Add a new MQTT In Node. Then, create an MQTT Broker Node:
+![NodeRed mTLS Broker Node](images/nodered-mtls-node.png)
 
-Leave the rest as is and click update and deploy. 
+Then edit your TLS config:
+![NodeRed TLS Config](images/nodered-tls-config.png)
 
 ### Debugging
 If the connection cannot be established for some reason, run the following on your end-device:
