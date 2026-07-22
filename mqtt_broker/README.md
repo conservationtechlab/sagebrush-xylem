@@ -277,19 +277,19 @@ sudo chmod 644 server.key
 ### TBMQ UI Configuration
 Add credientials for both NodeRed and end-device
 
-Client Credentials:  
+**Client Credentials:**  
 Authentication -> Credentials  
 ![TBMQ MTLS Client Auth](images/tbmq-mtls-client-auth.png)
 
-X-509 Toggle:  
+**X-509 Toggle:**  
 Authentication -> Providers  
 ![TBMQ X509 Auth](images/tbmq-x509-auth.png)
 
 ### NodeRed Configuration
-Add a new MQTT In Node. Then, create an MQTT Broker Node:
+Add a new MQTT In Node. Then, create an MQTT Broker Node:  
 ![NodeRed mTLS Broker Node](images/nodered-mtls-node.png)
 
-Then edit your TLS config:
+Then edit your TLS config:  
 ![NodeRed TLS Config](images/nodered-tls-config.png)
 
 ### Debugging
