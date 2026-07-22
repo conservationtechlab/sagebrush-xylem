@@ -1,14 +1,19 @@
 # annotation
 
+Classifier annotation records.
+
 ## Columns
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| `annotation_id` | uuid | **PK**, required |  |
-| `timestamp` | timestamp | required |  |
-| `annotator_id` | string | required |  |
+| `annotation_id` | uuid | **PK**, required | Unique identifier of annotation |
+| `timestamp` | timestamp | required | Timestamp of parent record annotation refers to |
+| `annotator_id` | string | **FK**, required | Annotator of record |
+
+**PK** - Primary Key  
+**FK** - Foreign Key 
 
 ## Relations
 
-- References [`person.person_id`](person.md)
-- Referenced by [`occurrence.annotation_id`](occurrence.md)
+- [`occurrence.annotation_id`](occurrence.md) => annotation_id
+- annotator_id => [`person.person_id`](person.md)
