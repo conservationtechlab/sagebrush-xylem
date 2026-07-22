@@ -871,6 +871,7 @@
 
 
 <h1 id="sensor_measure">sensor_measure<a class="headerlink" href="#sensor_measure" title="Permanent link">&para;</a></h1>
+<p>Data table of environmental sensor measurements.</p>
 <h2 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -886,38 +887,40 @@
 <td><code>measure_id</code></td>
 <td>uuid</td>
 <td><strong>PK</strong>, required</td>
-<td></td>
+<td>Unique identifier of measure record</td>
 </tr>
 <tr>
 <td><code>recorded_time</code></td>
 <td>timestamp</td>
 <td>required</td>
-<td></td>
+<td>Timestamp of when measure was recorded</td>
 </tr>
 <tr>
 <td><code>measure_name</code></td>
 <td>string</td>
 <td>required</td>
-<td></td>
+<td>What measure is recorded - e.g. 'ext_temperature'</td>
 </tr>
 <tr>
 <td><code>measure_value</code></td>
 <td>number</td>
-<td>required</td>
-<td></td>
+<td><strong>FK</strong>, required</td>
+<td>Raw data value of captured measure</td>
 </tr>
 <tr>
 <td><code>event_id</code></td>
 <td>uuid</td>
-<td>required</td>
-<td></td>
+<td><strong>FK</strong>, required</td>
+<td>Linked event record</td>
 </tr>
 </tbody>
 </table>
+<p><strong>PK</strong> =&gt; Primary Key<br />
+<strong>FK</strong> =&gt; Foreign Key  </p>
 <h2 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>References <a href="../uom/"><code>uom.measure_name</code></a></li>
-<li>References <a href="../event/"><code>event.event_id</code></a></li>
+<li>measure_name =&gt; <a href="../uom/"><code>uom.measure_name</code></a></li>
+<li>event_id =&gt; <a href="../event/"><code>event.event_id</code></a></li>
 </ul>
 
 

@@ -871,6 +871,7 @@
 
 
 <h1 id="person">person<a class="headerlink" href="#person" title="Permanent link">&para;</a></h1>
+<p>Person table.</p>
 <h2 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -886,26 +887,27 @@
 <td><code>person_id</code></td>
 <td>uuid</td>
 <td><strong>PK</strong>, required</td>
-<td></td>
+<td>Unique identifier of person</td>
 </tr>
 <tr>
 <td><code>name</code></td>
 <td>string</td>
 <td>required</td>
-<td></td>
+<td>Name of person</td>
 </tr>
 <tr>
 <td><code>email</code></td>
 <td>string</td>
 <td></td>
-<td></td>
+<td>email of person</td>
 </tr>
 </tbody>
 </table>
+<p><strong>PK</strong> - Primary Key  </p>
 <h2 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Referenced by <a href="../annotation/"><code>annotation.annotator_id</code></a></li>
-<li>Referenced by <a href="../occurrence/"><code>occurrence.validator_id</code></a></li>
+<li><a href="../annotation/"><code>annotation.annotator_id</code></a> =&gt; person_id</li>
+<li><a href="../occurrence/"><code>occurrence.validator_id</code></a> =&gt; person_id</li>
 </ul>
 
 

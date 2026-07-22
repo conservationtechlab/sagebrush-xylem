@@ -871,6 +871,7 @@
 
 
 <h1 id="device_class">device_class<a class="headerlink" href="#device_class" title="Permanent link">&para;</a></h1>
+<p>Class list of devices.</p>
 <h2 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -886,19 +887,20 @@
 <td><code>device_class_id</code></td>
 <td>uuid</td>
 <td><strong>PK</strong>, required</td>
-<td></td>
+<td>Unique identifier of device class</td>
 </tr>
 <tr>
 <td><code>device_class</code></td>
 <td>string</td>
 <td>required</td>
-<td></td>
+<td>Class of device - e.g. 'soil sensor'</td>
 </tr>
 </tbody>
 </table>
+<p><strong>PK</strong> - Primary Key  </p>
 <h2 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Referenced by <a href="../device_type/"><code>device_type.device_class_id</code></a></li>
+<li>device_class_id =&gt; <a href="../device_type/"><code>device_type.device_class_id</code></a></li>
 </ul>
 
 

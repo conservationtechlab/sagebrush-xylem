@@ -871,6 +871,7 @@
 
 
 <h1 id="annotation">annotation<a class="headerlink" href="#annotation" title="Permanent link">&para;</a></h1>
+<p>Classifier annotation records.</p>
 <h2 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -886,26 +887,28 @@
 <td><code>annotation_id</code></td>
 <td>uuid</td>
 <td><strong>PK</strong>, required</td>
-<td></td>
+<td>Unique identifier of annotation</td>
 </tr>
 <tr>
 <td><code>timestamp</code></td>
 <td>timestamp</td>
 <td>required</td>
-<td></td>
+<td>Timestamp of parent record annotation refers to</td>
 </tr>
 <tr>
 <td><code>annotator_id</code></td>
 <td>string</td>
-<td>required</td>
-<td></td>
+<td><strong>FK</strong>, required</td>
+<td>Annotator of record</td>
 </tr>
 </tbody>
 </table>
+<p><strong>PK</strong> - Primary Key<br />
+<strong>FK</strong> - Foreign Key </p>
 <h2 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>References <a href="../person/"><code>person.person_id</code></a></li>
-<li>Referenced by <a href="../occurrence/"><code>occurrence.annotation_id</code></a></li>
+<li><a href="../occurrence/"><code>occurrence.annotation_id</code></a> =&gt; annotation_id</li>
+<li>annotator_id =&gt; <a href="../person/"><code>person.person_id</code></a></li>
 </ul>
 
 

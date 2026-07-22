@@ -869,6 +869,7 @@
 
 
 <h1 id="uom">uom<a class="headerlink" href="#uom" title="Permanent link">&para;</a></h1>
+<p>Unit of Measure table.</p>
 <h2 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -884,19 +885,20 @@
 <td><code>measure_name</code></td>
 <td>string</td>
 <td><strong>PK</strong>, required</td>
-<td></td>
+<td>Unique name of measure</td>
 </tr>
 <tr>
 <td><code>unit_of_measure</code></td>
 <td>string</td>
 <td>required</td>
-<td></td>
+<td>Units recorded - e.g. 'uS/cm'</td>
 </tr>
 </tbody>
 </table>
+<p><strong>PK</strong> - Primary Key  </p>
 <h2 id="relations">Relations<a class="headerlink" href="#relations" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Referenced by <a href="../sensor_measure/"><code>sensor_measure.measure_name</code></a></li>
+<li><a href="../sensor_measure/"><code>sensor_measure.measure_name</code></a> =&gt; measure_name</li>
 </ul>
 
 
