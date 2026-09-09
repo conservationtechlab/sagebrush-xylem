@@ -33,12 +33,14 @@ In order to create a private CA based server-auth setup and enable TLS from publ
 an intermediate key as well, but for the purpose of simplicity in this demo we will describe the making a root certificate,
 and a server certificate. 
 
+In the following instructions, make sure that your CNs are distinct.  
+
 In a secure machine (not the virtual machine running TBMQ) create a root certificate:
 ```
 openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout rootCA.key -out rootCA.pem
 ```
 
-FIll in the details as needed. You should have a rootCA.key and a rootCA.pem. The rootCA.key NEVER leaves the machine
+Fill in the details as needed. You should have a rootCA.key and a rootCA.pem. The rootCA.key NEVER leaves the machine
 or gets shared elsewhere. Best practice is to keep it air-gapped or on a piece of designated storage media.
 
 Then create a private key for the TBMQ server:
@@ -111,7 +113,7 @@ Also ensure that under the 'ports' portion of the tbmq lines have a mapping for 
 Re-run the tbmq-install-and-run bash script in the folder.
 
 You may need to toggle the enable x.509 auth toggle in the main TBMQ UI once you re-navigate to the front-end. 
-
+ 
 ### Ports
 Now that TLS is enabled on 8883, you can open that port within the Security Groups on the virtual host managing platform. 
 
@@ -173,3 +175,136 @@ Note that we recommend you setup a [Sagemic](https://github.com/conservationtech
 and use the feature test script to send instead as that will be what is used for a real deployment. 
 
 *When testing TBMQ publishing and subscribing from different devices, generate a new TBMQ client each time. If you reuse client IDs in different places or at the same time in multiple spots, it could get weird.
+
+# TBMQ (mTLS)
+### Enabling mTLS (Two way TLS)
+- Follow this set of instructions for mTLS (skip the previous enabling TLS)  
+- In this section, work on your secure machine
+- Make sure all common names (CN) are distinct from each other
+
+**rootCA**
+
+```
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes -keyout rootCA.key -out rootCA.pem
+```
+- This creates `rootCA.key` and `rootCA.pem`
+- `rootCA.key` should never leave the machine 
+
+**TBMQ Certificates**
+
+```
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -out server.csr
+```
+- This creates your server key and csr
+
+```
+openssl x509 -req -in server.csr \
+  -CA rootCA.pem -CAkey rootCA.key -CAcreateserial \
+  -out server.crt -days 365 -sha256 \
+  -extfile <(printf "subjectAltName=DNS:<server-CN>,IP:<broker-ip>")
+```
+- mTLS has strict (inbound) host verification. If we didn't do sAN, it will compare the CN name and ip address and think they don't match
+- fill in the CN you gave your server in the csr process, and the ip of your broker
+- this will sign your server certificate!
+
+```
+cp server.crt server.pem
+cat rootCA.pem >> server.pem 
+```
+- This allows us to build the TrustStore, which is needed by mTLS
+
+Move `server.pem` and `server.key` into `/home/user/certs` on the TBMQ machine  
+
+**Client certificates**
+
+This will basically be the same as that of server, but no need for sAN because it's outbound!
+
+Do this for both NodeRed and end-device!
+
+**`Client` is just an example name. If you create a second device, it needs to be called something else with a unique CN.**  
+The best way is to use a UUID string name for the `.key`, `.crt`, and CN, that way it is easier to keep track.   
+All clients and subscribing servers need to be signed by the same root certificate!  
+
+```
+openssl genrsa -out client.key 2048
+openssl req -new -key client.key -out client.csr
+openssl x509 -req -in client.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out client.crt -days 365 -sha256
+```
+
+Move `rootCA.pem`, `client.crt`, `client.key` into your end-device/NodeRed
+
+### TBMQ Machine Configuration
+Once the example broker has been set-up, we need to add in our TLS settings and increase our max data rate in the docker-compose.yml
+
+```
+docker compose down
+```
+
+In the compose file, add these lines to the 'tbmq' portion:
+
+```
+      SECURITY_MQTT_BASIC_ENABLED: "true"
+      LISTENER_SSL_BIND_PORT: "8883"
+
+      SSL_NETTY_MAX_PAYLOAD_SIZE: 600000
+      TCP_NETTY_MAX_PAYLOAD_SIZE: 600000
+
+      LISTENER_SSL_ENABLED: "true"
+      LISTENER_SSL_CREDENTIALS_TYPE: "PEM"
+      LISTENER_SSL_PEM_CERT: "/config/certificates/server.pem"
+      LISTENER_SSL_PEM_KEY: "/config/certificates/server.key"
+      LISTENER_SSL_PEM_KEY_PASSWORD: ""
+```
+In the "volumes:" tab under the tbmq portion, ensure that you are also mounting the "certs" folder we made with the server.key and server.pem so that tbmq doc>
+
+```
+- /home/<user>/certs:/config/certificates
+```
+
+Also ensure that under the 'ports' portion of the tbmq lines have a mapping for 8883:8883
+
+```
+docker compose up -d
+```
+
+Give your docker container permission to read server certificates 
+```
+sudo chmod 644 server.pem
+sudo chmod 644 server.key
+```
+
+### TBMQ UI Configuration
+Add credientials for both NodeRed and end-device
+
+**Client Credentials:**  
+Authentication -> Credentials  
+![TBMQ MTLS Client Auth](images/tbmq-mtls-client-auth.png)
+
+**X-509 Toggle:**  
+Authentication -> Providers  
+![TBMQ X509 Auth](images/tbmq-x509-auth.png)
+
+### NodeRed Configuration
+Add a new MQTT In Node. Then, create an MQTT Broker Node:  
+![NodeRed mTLS Broker Node](images/nodered-mtls-node.png)
+
+Then edit your TLS config:  
+![NodeRed TLS Config](images/nodered-tls-config.png)
+
+### Debugging
+If the connection cannot be established for some reason, run the following on your end-device:
+```
+openssl s_client -connect <broker-ip>:8883 -CAfile <ca file name>
+```
+- Check if the CNs of the server and rootCA is the same as what you put
+- Check the return code at the very bottom
+
+If the CNs do not match what you put, it is likely that the Docker is holding on to cached copies of old certificates. To remove them: 
+```
+docker compose down -v
+docker container prune -f
+sudo chmod 644 server.pem
+sudo chmod 644 server.key
+docker compose up -d
+```
